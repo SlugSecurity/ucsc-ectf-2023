@@ -2,6 +2,12 @@
 
 The firmware for the car.
 
+## How to run the project with Podman/Docker (This is the easy way!)
+Note: Using Podman is recommended, as it does not need to run as root.
+1. Install [Podman](https://podman.io/getting-started/installation) or [Docker](https://docs.docker.com/get-docker/).
+2. Run the `run_podman.sh` or `run_docker.sh` scripts depending on which runtime you installed.
+3. If everything went right you should be in a GDB session.
+
 ## How to setup the development environment in Ubuntu (physical, or virtualized in VirtualBox or WSL2)
 1. Install the Rust toolchain with `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`.
 2. Run `cargo install cross && rustup target add thumbv7em-none-eabihf && sudo apt update && sudo apt install -y openocd gdb-multiarch && sudo ln -s /usr/bin/gdb-multiarch /usr/bin/arm-none-eabi-gdb`.
