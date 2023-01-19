@@ -3,6 +3,11 @@
 
 extern crate cortex_m_rt;
 extern crate cortex_m_semihosting;
+
+#[cfg(debug_assertions)]
+extern crate panic_semihosting;
+
+#[cfg(not(debug_assertions))]
 extern crate panic_halt;
 
 use core::fmt::Write;
