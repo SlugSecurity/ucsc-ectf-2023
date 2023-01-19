@@ -10,6 +10,8 @@ extern crate panic_semihosting;
 #[cfg(not(debug_assertions))]
 extern crate panic_halt;
 
+extern crate tm4c123x_hal;
+
 use core::fmt::Write;
 use cortex_m_rt::entry;
 use cortex_m_semihosting::hio;
