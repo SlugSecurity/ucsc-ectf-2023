@@ -6,7 +6,7 @@ This repository contains all of the source code for UCSC's 2023 eCTF competition
 Note: Using Podman is recommended, as it does not need to run as root.
 1. Install [Podman](https://podman.io/getting-started/installation) or [Docker](https://docs.docker.com/get-docker/).
 2. Change the working directory to the Rust project to be tested.
-3. Run the `run_podman.sh` or `run_docker.sh` scripts depending on which runtime you installed. This will build the firmware and run it on the board with GDB. The firmware execution will be paused at the first instruction. Use the `continue` command to continue execution.
+3. Run the `run_podman.sh` or `run_docker.sh` scripts depending on which runtime you installed. The project to test will need to specified as an argument. For example, to test the car project, run `./run_podman.sh ucsc-ectf-car` or `./run_docker.sh ucsc-ectf-car`. Valid projects are `ucsc-ectf-car` and `ucsc-ectf-fob`. This will build the firmware and run it on the board with GDB. The firmware execution will be paused at the first instruction. Use the `continue` command to continue execution.
 
 ## How to setup the development environment in Ubuntu manually (physical, or virtualized in VirtualBox or WSL2)
 1. Install the Rust toolchain with `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`.
@@ -17,5 +17,4 @@ Note: Using Podman is recommended, as it does not need to run as root.
 
 ## How to test the project with a manually setup development environment
 1. Run `openocd -f board/ti_ek-tm4c123gxl.cfg`. This will start up an OpenOCD server, which will be used with GDB later to debug the firmware. This command requires the board to be plugged in.
-2. Change the working directory to the Rust project to be tested.
-3. In a separate shell, run `cargo run`. This will build the firmware and run it on the board with GDB. The firmware execution will be paused at the first instruction. Use the `continue` command to continue execution.
+2. In a separate shell, run `cargo run --bin <project>`. `<project>` should be `ucsc-ectf-car` or `ucsc-ectf-fob`. This will build the firmware and run it on the board with GDB. The firmware execution will be paused at the first instruction. Use the `continue` command to continue execution.

@@ -253,7 +253,7 @@ dependencies = [
 [[package]]
 name = "tm4c-hal"
 version = "0.4.1"
-source = "git+ssh://git@git.ucsc.edu/ucsc-ectf-2023/tm4c-hal.git?branch=tm4c123x-hal-0.10.2-update#5e6dd13bcbf5e8cf8a07679a4260bd109708ae52"
+source = "git+https://git.ucsc.edu/ucsc-ectf-2023/tm4c-hal.git?branch=tm4c123x-hal-0.10.2-update#5e6dd13bcbf5e8cf8a07679a4260bd109708ae52"
 dependencies = [
  "cast 0.2.7",
  "cortex-m 0.6.7",
@@ -264,7 +264,7 @@ dependencies = [
 [[package]]
 name = "tm4c123x"
 version = "0.9.0"
-source = "git+ssh://git@git.ucsc.edu/ucsc-ectf-2023/dslite2svd.git?branch=v0.9.0-update#6d11b5378b8c00138aeeddc97657d29e629fd5fe"
+source = "git+https://git.ucsc.edu/ucsc-ectf-2023/dslite2svd.git?branch=v0.9.0-update#6d11b5378b8c00138aeeddc97657d29e629fd5fe"
 dependencies = [
  "bare-metal",
  "cortex-m 0.7.7",
@@ -275,7 +275,7 @@ dependencies = [
 [[package]]
 name = "tm4c123x-hal"
 version = "0.10.2"
-source = "git+ssh://git@git.ucsc.edu/ucsc-ectf-2023/tm4c-hal.git?branch=tm4c123x-hal-0.10.2-update#5e6dd13bcbf5e8cf8a07679a4260bd109708ae52"
+source = "git+https://git.ucsc.edu/ucsc-ectf-2023/tm4c-hal.git?branch=tm4c123x-hal-0.10.2-update#5e6dd13bcbf5e8cf8a07679a4260bd109708ae52"
 dependencies = [
  "cast 0.3.0",
  "cortex-m 0.7.7",
