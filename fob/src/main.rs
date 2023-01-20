@@ -11,6 +11,7 @@ extern crate panic_semihosting;
 extern crate panic_halt;
 
 extern crate tm4c123x_hal;
+extern crate ucsc_ectf_util;
 
 use core::fmt::Write;
 use cortex_m_rt::entry;

@@ -1,15 +1,10 @@
 [package]
 name = "ucsc-ectf-fob"
 version = "0.1.0"
+edition = "2021"
 authors = ["2023 UCSC eCTF Team"]
 categories = ["embedded", "no-std"]
 license = "MIT"
-
-[profile.release]
-lto = true
-codegen-units = 1
-debug = false
-strip = true
 
 [dependencies]
 cortex-m-rt = "0.7.2"
@@ -17,9 +12,4 @@ cortex-m-semihosting = "0.5.0"
 panic-semihosting = "0.6.0"
 panic-halt = "0.2.0"
 tm4c123x-hal = { version = "0.10.2", features = ["rt"] }
-
-# Make sure tm4c123x and tm4c123x-hal use the latest cortex-m and cortex-m-rt crates to fix UB.
-
-[patch.crates-io]
-tm4c123x = { git = "ssh://git@git.ucsc.edu/ucsc-ectf-2023/dslite2svd.git", branch = "v0.9.0-update" }
-tm4c123x-hal = { git = "ssh://git@git.ucsc.edu/ucsc-ectf-2023/tm4c-hal.git", branch = "tm4c123x-hal-0.10.2-update" }
+ucsc-ectf-util = { path = "../util" }

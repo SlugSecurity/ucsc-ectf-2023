@@ -301,6 +301,28 @@ dependencies = [
  "panic-halt",
  "panic-semihosting",
  "tm4c123x-hal",
+ "ucsc-ectf-util",
+]
+
+[[package]]
+name = "ucsc-ectf-fob"
+version = "0.1.0"
+dependencies = [
+ "cortex-m-rt",
+ "cortex-m-semihosting",
+ "panic-halt",
+ "panic-semihosting",
+ "tm4c123x-hal",
+ "ucsc-ectf-util",
+]
+
+[[package]]
+name = "ucsc-ectf-util"
+version = "0.1.0"
+dependencies = [
+ "cortex-m-rt",
+ "cortex-m-semihosting",
+ "tm4c123x-hal",
 ]
 
 [[package]]
