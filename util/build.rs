@@ -5,6 +5,7 @@ use std::process::Command;
 use std::{env, fs};
 
 fn main() {
+    // Get the out directory.
     let out = &PathBuf::from(env::var_os("OUT_DIR").unwrap());
 
     // Add out directory to the linker search path.
@@ -15,7 +16,7 @@ fn main() {
         .arg("-C")
         .arg("../rand_uninit_memory")
         .status()
-        .expect("TEST");
+        .unwrap();
 
     // Put the rand_uninit_memory library somewhere the linker can find it.
     File::create(out.join("librand_uninit_memory.a"))

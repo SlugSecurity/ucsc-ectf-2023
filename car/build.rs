@@ -4,6 +4,7 @@ use std::io::Write;
 use std::path::PathBuf;
 
 fn main() {
+    // Get the out directory.
     let out = &PathBuf::from(env::var_os("OUT_DIR").unwrap());
 
     // Add out directory to the linker search path.
