@@ -4,13 +4,10 @@ use arrayvec::{ArrayVec, CapacityError};
 
 mod error;
 pub use error::*;
+use tm4c123x_hal::interrupt;
 
 pub trait Listener {
-    fn tick(&mut self) -> Result<(), ListenerError>;
-
-    fn tick_with_delay(&mut self, delay: Duration) -> Result<(), ListenerError> {
-        todo!() // make a default implementation using poll with it
-    }
+    fn add_action(&mut self) -> Result<()>;
 }
 
 pub struct Listeners<'a, const CAPACITY: usize> {
@@ -25,13 +22,22 @@ impl<'a, const CAPACITY: usize> Listeners<'a, CAPACITY> {
     pub fn add(
         &mut self,
         listener: &'a mut dyn Listener,
-    ) -> Result<(), CapacityError<&'a dyn Listener>> {
+    ) -> core::result::Result<(), CapacityError<&'a dyn Listener>> {
         todo!()
     }
 }
 
 impl<'a, const CAPACITY: usize> Listener for Listeners<'a, CAPACITY> {
-    fn tick(&mut self) -> Result<(), ListenerError> {
+    fn tick(&mut self) -> Result<()> {
         todo!()
+    }
+}
+
+#[interrupt]
+unsafe fn UART0() {
+    static mut BUFFER: [u8; 1000] = [0; 1000];
+
+    for f in BUFFER.iter_mut() {
+        *f = 5;
     }
 }
