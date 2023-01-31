@@ -28,7 +28,7 @@ impl<'a, const CAPACITY: usize> Listeners<'a, CAPACITY> {
 }
 
 impl<'a, const CAPACITY: usize> Listener for Listeners<'a, CAPACITY> {
-    fn tick(&mut self) -> Result<()> {
+    fn add_action(&mut self) -> Result<()> {
         todo!()
     }
 }

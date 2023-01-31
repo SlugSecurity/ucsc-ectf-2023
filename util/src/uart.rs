@@ -18,7 +18,7 @@ impl UartHandle {}
 pub struct UartReceiveListener {}
 
 impl Listener for UartReceiveListener {
-    fn tick(&mut self) -> listener::Result<()> {
+    fn add_action(&mut self) -> listener::Result<()> {
         todo!()
     }
 }
