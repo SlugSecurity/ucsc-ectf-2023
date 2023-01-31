@@ -1,4 +1,4 @@
-OUTPUT = rand_uninit_memory.a
+OUTPUT = librand_uninit_memory.a
 SOURCEFILES = $(wildcard *.c)
 OBJECTFILES = $(patsubst %.c,%.o,$(SOURCEFILES))
 
