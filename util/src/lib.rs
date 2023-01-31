@@ -9,4 +9,5 @@ extern crate tm4c123x_hal;
 
 pub mod listener;
 pub mod uart;
+pub mod rng;
 // TODO: pub mod button;
