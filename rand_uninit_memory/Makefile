@@ -1,0 +1,28 @@
+OUTPUT = rand_uninit_memory.a
+SOURCEFILES = $(wildcard *.c)
+OBJECTFILES = $(patsubst %.c,%.o,$(SOURCEFILES))
+
+PREFIX = arm-none-eabi
+CC = $(PREFIX)-gcc
+AR = $(PREFIX)-ar
+CFLAGS = -Wall -Werror -Wextra -pedantic -Wstack-usage=22528 -std=gnu11 -mabi=aapcs -O3
+
+.PHONY: all debug clean format
+
+all: $(OUTPUT)
+
+$(OUTPUT): $(OBJECTFILES)
+	$(AR) -crs $@ $^
+
+$(OBJECTFILES): $(SOURCEFILES)
+	$(CC) $(CFLAGS) -c $(SOURCEFILES)
+
+debug: CFLAGS += -g -fsanitize=address -fsanitize=undefined
+debug: LDFLAGS += -fsanitize=address -fsanitize=undefined
+debug: all
+
+clean:
+	rm -f $(OUTPUT) $(OBJECTFILES)
+
+format:
+	clang-format -i -style=file *.[ch]

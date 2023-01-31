@@ -1,4 +1,11 @@
+# Rust
 cache/
 target/
 **/*.rs.bk
+
+# GDB
 .gdb_history
+
+# C
+*.o
+*.a
