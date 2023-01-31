@@ -5,7 +5,7 @@ OBJECTFILES = $(patsubst %.c,%.o,$(SOURCEFILES))
 PREFIX = arm-none-eabi
 CC = $(PREFIX)-gcc
 AR = $(PREFIX)-ar
-CFLAGS = -Wall -Werror -Wextra -pedantic -Wstack-usage=22528 -std=gnu11 -mabi=aapcs -O3
+CFLAGS = -Wall -Werror -Wextra -pedantic -Wstack-usage=22528 -std=gnu11 -mthumb -mabi=aapcs -O3
 
 .PHONY: all debug clean format
 
