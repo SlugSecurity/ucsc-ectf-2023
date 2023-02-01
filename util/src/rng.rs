@@ -1,19 +1,19 @@
 use core::ffi::c_uchar;
 
 const fn get_random_bytes_size() -> usize {
-    const file: &str = include_str!("../../rand_uninit_memory/rand_uninit_memory.h");
+    const FILE: &str = include_str!("../../rand_uninit_memory/rand_uninit_memory.h");
 
     let mut file_idx = 0;
     let mut line_len;
-    let mut line_buff = [0; file.len()];
+    let mut line_buff = [0; FILE.len()];
     let eq_check = b"#define RANDOM_BYTES_SIZE ";
 
-    'outer: while file_idx < file.len() {
+    'outer: while file_idx < FILE.len() {
         line_len = 0;
 
         // Get each line and put it in line_buff.
-        while file_idx < file.len() && file.as_bytes()[file_idx] != b'\n' {
-            line_buff[line_len] = file.as_bytes()[file_idx];
+        while file_idx < FILE.len() && FILE.as_bytes()[file_idx] != b'\n' {
+            line_buff[line_len] = FILE.as_bytes()[file_idx];
 
             line_len += 1;
             file_idx += 1;
@@ -39,7 +39,6 @@ const fn get_random_bytes_size() -> usize {
         }
 
         let mut num = 0;
-        let num_len = line_len - eq_check.len();
 
         // Now, we just need to get the number if there is one.
         while line_idx < line_len {
