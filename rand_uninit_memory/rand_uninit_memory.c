@@ -84,11 +84,13 @@ To sum up the safety requirements:
 
 */
 
-void __attribute__((noinline)) init_random_bytes(void) {
+void __attribute__((noinline))
+init_random_bytes(void (*new_rand_callback)(volatile unsigned char *)) {
     volatile unsigned char uninit_bytes[RANDOM_BYTES_SIZE + LARGE_STACK_OFFSET];
 
     for (int i = 0; i < RANDOM_BYTES_SIZE; i++) {
         random_bytes[i] = uninit_bytes[i];
-        uninit_bytes[i] = '\0';
     }
+
+    new_rand_callback(uninit_bytes);
 }
