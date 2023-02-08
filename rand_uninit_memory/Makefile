@@ -17,8 +17,7 @@ $(OUTPUT): $(OBJECTFILES)
 $(OBJECTFILES): $(SOURCEFILES)
 	$(CC) $(CFLAGS) -c $(SOURCEFILES)
 
-debug: CFLAGS += -g -fsanitize=address -fsanitize=undefined
-debug: LDFLAGS += -fsanitize=address -fsanitize=undefined
+debug: CFLAGS += -g
 debug: all
 
 clean:

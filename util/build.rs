@@ -11,12 +11,29 @@ fn main() {
     // Add out directory to the linker search path.
     println!("cargo:rustc-link-search={}", out.display());
 
-    // Call make for rand_uninit_memory.
+    // Call "make clean" for rand_uninit_memory.
     Command::new("make")
         .arg("-C")
         .arg("../rand_uninit_memory")
+        .arg("clean")
         .status()
         .unwrap();
+
+    // Call "make debug" or "make" for rand_uninit_memory depending on profile.
+    if env::var_os("PROFILE").unwrap() == "debug" {
+        Command::new("make")
+            .arg("-C")
+            .arg("../rand_uninit_memory")
+            .arg("debug")
+            .status()
+            .unwrap();
+    } else {
+        Command::new("make")
+            .arg("-C")
+            .arg("../rand_uninit_memory")
+            .status()
+            .unwrap();
+    }
 
     // Put the rand_uninit_memory library somewhere the linker can find it.
     File::create(out.join("librand_uninit_memory.a"))
@@ -27,7 +44,8 @@ fn main() {
     // Link to the rand_uninit_memory library.
     println!("cargo:rustc-link-lib=rand_uninit_memory");
 
-    // Only re-run the build script when this file or rand_uninit_memory.c is changed.
+    // Only re-run the build script when rand_uninit_memory or profile is changed.
     println!("cargo:rerun-if-changed=build.rs");
-    println!("cargo:rerun-if-changed=../rand_uninit_memory/rand_uninit_memory.c");
+    println!("cargo:rerun-if-changed=../rand_uninit_memory");
+    println!("cargo:rerun-if-env-changed=PROFILE");
 }
