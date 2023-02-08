@@ -1,7 +1,4 @@
-extern crate rand_chacha;
-extern crate sha3;
-
-use core::{ffi::c_uchar, mem::MaybeUninit};
+use core::{ffi::c_uchar, marker::PhantomData, mem::MaybeUninit};
 
 use sha3::{Digest, Sha3_256};
 
@@ -10,8 +7,10 @@ use rand_chacha::{
     ChaCha20Rng,
 };
 
+use super::EntropySource;
+
 const fn get_random_bytes_size() -> usize {
-    const FILE: &str = include_str!("../../rand_uninit_memory/rand_uninit_memory.h");
+    const FILE: &str = include_str!("../../../../rand_uninit_memory/rand_uninit_memory.h");
 
     let mut file_idx = 0;
     let mut line_len;
@@ -118,5 +117,32 @@ unsafe extern "aapcs" fn new_rand_callback(uninit_memory: *mut MaybeUninit<c_uch
         uninit_memory
             .offset(i as isize)
             .write_volatile(MaybeUninit::new(uninit_memory_rng.next_u32() as u8));
+    }
+}
+
+pub struct UninitMemory<T: EntropySource> {
+    next: T,
+    remove_send_sync: PhantomData<*const ()>, // Prevents UninitMemory from being Send or Sync.
+}
+
+impl<T: EntropySource> EntropySource for UninitMemory<T> {
+    fn init() -> Self {
+        unsafe {
+            // SAFETY: This function call is safe due to the previous safety justifications on
+            // init_random_bytes() and new_rand_callback().
+            init_random_bytes(new_rand_callback);
+        }
+
+        UninitMemory {
+            next: T::init(),
+            remove_send_sync: PhantomData,
+        }
+    }
+
+    fn add_to_hasher(&self, hasher: &mut Sha3_256) {
+        // SAFETY: This read from random_bytes is safe because UninitMemory is neither Send nor Sync,
+        // and therefore, it can only be accessed on the thread it was initialized on.
+        hasher.update(unsafe { &random_bytes });
+        self.next.add_to_hasher(hasher);
     }
 }
