@@ -2,6 +2,7 @@ use sha3::Sha3_256;
 
 use super::EntropySource;
 
+/// This entropy source is a constant secret value.
 pub struct Secret<T: EntropySource> {
     next: T,
 }

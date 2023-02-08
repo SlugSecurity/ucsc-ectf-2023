@@ -2,6 +2,7 @@ use sha3::Sha3_256;
 
 use super::EntropySource;
 
+/// This entropy source gathers entropy from the LSBs of the ADC inputs.
 pub struct Adc<T: EntropySource> {
     next: T,
 }

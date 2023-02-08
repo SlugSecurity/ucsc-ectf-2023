@@ -2,6 +2,7 @@ use sha3::Sha3_256;
 
 use super::EntropySource;
 
+/// This entropy source gathers entropy from drift between clocks on the board.
 pub struct ClockDrift<T: EntropySource> {
     next: T,
 }

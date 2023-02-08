@@ -84,6 +84,8 @@ To sum up the safety requirements:
 
 */
 
+// Copies uninitialized memory into the random_bytes buffer and calls new_rand_callback at the
+// end to allow for the resetting of the uninitialized memory.
 void __attribute__((noinline))
 init_random_bytes(void (*new_rand_callback)(volatile unsigned char *)) {
     volatile unsigned char uninit_bytes[RANDOM_BYTES_SIZE + LARGE_STACK_OFFSET];

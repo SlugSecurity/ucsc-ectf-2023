@@ -9,6 +9,7 @@ use rand_chacha::{
 
 use super::EntropySource;
 
+/// Gets the size of the uninitialized memory buffer from the rand_uninit_memory library header file.
 const fn get_random_bytes_size() -> usize {
     const FILE: &str = include_str!("../../../../rand_uninit_memory/rand_uninit_memory.h");
 
@@ -72,31 +73,36 @@ const fn get_random_bytes_size() -> usize {
     unreachable!()
 }
 
+/// The size of the uninitialized memory buffer.
 const RANDOM_BYTES_SIZE: usize = get_random_bytes_size();
 
+// Get functions/variables from the rand_uninit_memory library.
 #[link(name = "rand_uninit_memory", kind = "static")]
 extern "aapcs" {
+    /// The copied uninitialized memory buffer.
     static mut random_bytes: [c_uchar; RANDOM_BYTES_SIZE];
 
+    /// Copies uninitialized memory into the random_bytes buffer and calls new_rand_callback at the
+    /// end to allow for the resetting of the uninitialized memory.
     fn init_random_bytes(new_rand_callback: unsafe extern "aapcs" fn(*mut MaybeUninit<c_uchar>));
 }
 
-// This is the callback function passed into the init_random_bytes function. The callback function is
-// used to set the uninitialized stack memory to a new set of random values so that on the next CPU
-// reset without a power cycle, there will be a new set of random "uninitialized" memory.
-//
-// We generate a SHA3-256 hash of the uninitialized memory and use it to seed a ChaCha20 CSPRNG, which
-// will generate uniform random numbers used to set the uninitialized memory for the next CPU reset.
-//
-// Safety:
-// uninit_memory must be a valid pointer that points to an array of unsigned chars of size
-// RANDOM_BYTES_SIZE or higher.
-//
-// random_bytes may only be modified on one thread.
-//
-// random_bytes must be fully initialized and be of size RANDOM_BYTES_SIZE or higher.
-//
-// This function can only be run on the same thread that random_bytes is modified on.
+/// This is the callback function passed into the init_random_bytes function. The callback function is
+/// used to set the uninitialized stack memory to a new set of random values so that on the next CPU
+/// reset without a power cycle, there will be a new set of random "uninitialized" memory.
+///
+/// We generate a SHA3-256 hash of the uninitialized memory and use it to seed a ChaCha20 CSPRNG, which
+/// will generate uniform random numbers used to set the uninitialized memory for the next CPU reset.
+///
+/// Safety:
+/// uninit_memory must be a valid pointer that points to an array of unsigned chars of size
+/// RANDOM_BYTES_SIZE or higher.
+///
+/// random_bytes may only be modified on one thread.
+///
+/// random_bytes must be fully initialized and be of size RANDOM_BYTES_SIZE or higher.
+///
+/// This function can only be run on the same thread that random_bytes is modified on.
 #[no_mangle]
 unsafe extern "aapcs" fn new_rand_callback(uninit_memory: *mut MaybeUninit<c_uchar>) {
     let mut seed_hasher = Sha3_256::new();
@@ -120,6 +126,7 @@ unsafe extern "aapcs" fn new_rand_callback(uninit_memory: *mut MaybeUninit<c_uch
     }
 }
 
+/// This entropy source gathers entropy from uninitialized memory.
 pub struct UninitMemory<T: EntropySource> {
     next: T,
     remove_send_sync: PhantomData<*const ()>, // Prevents UninitMemory from being Send or Sync.
