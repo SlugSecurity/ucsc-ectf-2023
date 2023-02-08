@@ -1,8 +1,9 @@
 extern crate rand_chacha;
+extern crate sha3;
 
 use core::{ffi::c_uchar, mem::MaybeUninit};
 
-use sha2::{Digest, Sha256};
+use sha3::{Digest, Sha3_256};
 
 use rand_chacha::{
     rand_core::{RngCore, SeedableRng},
@@ -85,7 +86,7 @@ extern "aapcs" {
 // used to set the uninitialized stack memory to a new set of random values so that on the next CPU
 // reset without a power cycle, there will be a new set of random "uninitialized" memory.
 //
-// We generate an SHA-256 hash of the uninitialized memory and use it to seed a ChaCha20 CSPRNG, which
+// We generate a SHA3-256 hash of the uninitialized memory and use it to seed a ChaCha20 CSPRNG, which
 // will generate uniform random numbers used to set the uninitialized memory for the next CPU reset.
 //
 // Safety:
@@ -99,7 +100,7 @@ extern "aapcs" {
 // This function can only be run on the same thread that random_bytes is modified on.
 #[no_mangle]
 unsafe extern "aapcs" fn new_rand_callback(uninit_memory: *mut MaybeUninit<c_uchar>) {
-    let mut seed_hasher = Sha256::new();
+    let mut seed_hasher = Sha3_256::new();
     // SAFETY: The use of random_bytes is data-race-free due to the guarantees provided by this
     // function. Since random_bytes is fully initialized and is data-race-free, this use of
     // random_bytes is safe.

@@ -3,7 +3,7 @@
 
 #include "rand_uninit_memory.h"
 
-#define LARGE_STACK_OFFSET 20480 // 20 KiB
+#define LARGE_STACK_OFFSET 16384 // 16 KiB
 
 unsigned char random_bytes[RANDOM_BYTES_SIZE];
 
