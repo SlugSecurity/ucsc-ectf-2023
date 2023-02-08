@@ -34,7 +34,6 @@ impl<T: EntropySource> EntropyHasher<T> {
     pub fn hash(&self) -> [u8; ENTROPY_HASH_SIZE] {
         let mut hasher = Sha3_256::new();
         self.entropy.add_to_hasher(&mut hasher);
-
         hasher.finalize().into()
     }
 }

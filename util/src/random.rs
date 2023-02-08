@@ -17,8 +17,8 @@ impl RandomNumberGenerator {
         ))
     }
 
-    /// Fills the given buffer with random bytes.
-    pub fn fill_with_random_bytes(&mut self, dest: &mut [u8]) {
+    /// Fills the given slice with random bytes.
+    pub fn fill_rand_slice(&mut self, dest: &mut [u8]) {
         self.0.fill_bytes(dest);
     }
 }
