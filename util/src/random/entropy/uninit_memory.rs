@@ -1,13 +1,13 @@
 use core::{ffi::c_uchar, marker::PhantomData, mem::MaybeUninit};
 
-use sha3::{Digest, Sha3_256};
-
 use rand_chacha::{
     rand_core::{RngCore, SeedableRng},
     ChaCha20Rng,
 };
 
 use super::EntropySource;
+use sha3::{Digest, Sha3_256};
+use tm4c123x_hal::Peripherals;
 
 /// Gets the size of the uninitialized memory buffer from the rand_uninit_memory library header file.
 const fn get_random_bytes_size() -> usize {
@@ -133,7 +133,7 @@ pub struct UninitMemory<T: EntropySource> {
 }
 
 impl<T: EntropySource> EntropySource for UninitMemory<T> {
-    fn init() -> Self {
+    fn init(peripherals: &mut Peripherals) -> Self {
         unsafe {
             // SAFETY: This function call is safe due to the previous safety justifications on
             // init_random_bytes() and new_rand_callback().
@@ -141,7 +141,7 @@ impl<T: EntropySource> EntropySource for UninitMemory<T> {
         }
 
         UninitMemory {
-            next: T::init(),
+            next: T::init(peripherals),
             remove_send_sync: PhantomData,
         }
     }

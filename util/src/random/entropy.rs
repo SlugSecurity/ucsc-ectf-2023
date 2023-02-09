@@ -11,6 +11,7 @@ pub use secret::Secret;
 pub use uninit_memory::UninitMemory;
 
 use sha3::{Digest, Sha3_256};
+use tm4c123x_hal::Peripherals;
 
 /// The size of the hashed entropy. 256 bits = 32 bytes.
 const ENTROPY_HASH_SIZE: usize = 32;
@@ -20,7 +21,7 @@ pub trait EntropySource {
     /// Initializes the internal state of the entropy source. May block to gather entropy.
     ///
     /// IMPORTANT NOTE: This function must call the next entropy source's `init()` function.
-    fn init() -> Self;
+    fn init(peripherals: &mut Peripherals) -> Self;
     /// Adds entropy from the entropy source to a hasher.
     ///
     /// IMPORTANT NOTE: This function must call the next entropy source's `add_to_hasher()` function.
@@ -29,7 +30,7 @@ pub trait EntropySource {
 
 // We implement this trait for () so that we can use it to end the list of entropy sources.
 impl EntropySource for () {
-    fn init() {}
+    fn init(_peripherals: &mut Peripherals) {}
     fn add_to_hasher(&self, _hasher: &mut Sha3_256) {}
 }
 
@@ -41,8 +42,10 @@ pub struct EntropyHasher<T: EntropySource> {
 
 impl<T: EntropySource> EntropyHasher<T> {
     /// Initializes the entropy hasher, gathering entropy from all of the inputted sources.
-    pub fn new() -> Self {
-        EntropyHasher { entropy: T::init() }
+    pub fn new(peripherals: &mut Peripherals) -> Self {
+        EntropyHasher {
+            entropy: T::init(peripherals),
+        }
     }
 
     /// Concatenates entropy sources together and hashes the result.

@@ -1,6 +1,6 @@
-use sha3::Sha3_256;
-
 use super::EntropySource;
+use sha3::Sha3_256;
+use tm4c123x_hal::Peripherals;
 
 /// This entropy source gathers entropy from the LSBs of the ADC inputs.
 pub struct Adc<T: EntropySource> {
@@ -8,10 +8,13 @@ pub struct Adc<T: EntropySource> {
 }
 
 impl<T: EntropySource> EntropySource for Adc<T> {
-    fn init() -> Self {
+    fn init(peripherals: &mut Peripherals) -> Self {
+        todo!("Randomize ADC pins and take ADC peripherals.");
         todo!("Finish ADC entropy source implementation.");
 
-        Adc { next: T::init() }
+        Adc {
+            next: T::init(peripherals),
+        }
     }
 
     fn add_to_hasher(&self, hasher: &mut Sha3_256) {
