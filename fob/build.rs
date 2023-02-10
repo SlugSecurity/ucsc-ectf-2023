@@ -4,15 +4,19 @@ use std::io::Write;
 use std::path::PathBuf;
 
 fn main() {
-    // Put the linker script somewhere the linker can find it
+    // Get the out directory.
     let out = &PathBuf::from(env::var_os("OUT_DIR").unwrap());
+
+    // Add out directory to the linker search path.
+    println!("cargo:rustc-link-search={}", out.display());
+
+    // Put the memory.x linker script somewhere the linker can find it.
     File::create(out.join("memory.x"))
         .unwrap()
         .write_all(include_bytes!("memory.x"))
         .unwrap();
-    println!("cargo:rustc-link-search={}", out.display());
 
-    // Only re-run the build script when memory.x is changed,
-    // instead of when any part of the source code changes.
+    // Only re-run the build script when this file or memory.x is changed.
+    println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=memory.x");
 }
