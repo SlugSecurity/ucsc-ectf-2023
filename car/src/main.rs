@@ -7,10 +7,10 @@
 extern crate cortex_m_rt;
 extern crate cortex_m_semihosting;
 
-#[cfg(debug_assertions)]
+#[cfg(feature = "panic-semihosting")]
 extern crate panic_semihosting;
 
-#[cfg(not(debug_assertions))]
+#[cfg(not(feature = "panic-semihosting"))]
 extern crate panic_halt;
 
 extern crate tm4c123x_hal;

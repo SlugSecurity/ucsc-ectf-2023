@@ -1,0 +1,50 @@
+image: archlinux:latest
+
+stages:
+  - lint
+  - lint-pedantic
+  - build
+  - deploy
+
+before_script:
+  - pacman -Sy
+  - pacman -S --noconfirm rustup
+  - rustup default stable
+  - rustup target add thumbv7em-none-eabihf
+  - rustup component add clippy
+  - pacman -S --noconfirm arm-none-eabi-gcc gcc make git
+
+lint:
+  stage: lint
+  script:
+    - cargo clippy -- -D warnings
+  allow_failure: true
+
+lint-pedantic:
+  stage: lint-pedantic
+  script:
+    - cargo clippy -- -W clippy::pedantic
+  allow_failure: true
+
+build:
+  stage: build
+  script:
+    - cargo build --release
+  artifacts:
+    paths:
+      - target/thumbv7em-none-eabihf/release
+
+pages:
+  stage: deploy
+  environment: docs
+  script:
+    - mkdir public
+    - cargo doc --no-deps --document-private-items
+    - cp -r target/thumbv7em-none-eabihf/doc public/privateapi
+    - cargo doc --no-deps
+    - cp -r target/thumbv7em-none-eabihf/doc public/publicapi
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
