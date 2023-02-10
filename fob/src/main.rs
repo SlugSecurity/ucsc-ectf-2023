@@ -1,3 +1,6 @@
+//! The entry point for the key fob firmware.
+
+#![warn(missing_docs)]
 #![no_main]
 #![no_std]
 
