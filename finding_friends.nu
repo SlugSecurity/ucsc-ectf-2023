@@ -13,18 +13,18 @@ if "BOARDS" in $env {
 
 # Remove friendless friend-locks.
 try {
-    kill -s 0 (open /tmp/friendlock1 | into int)
-} catch {
-    do -i { rm /tmp/friendlock1 }
+    if not (open /tmp/friendlock1 | into int) in (ps).pid {
+        rm /tmp/friendlock1
+    }
 }
 
-flock /tmp/friendlock0 nu -c $"while \('/tmp/friendlock1' | path exists\) {}; ($PID) out> /tmp/friendlock1"
+flock /tmp/friendlock0 nu -c $"while \('/tmp/friendlock1' | path exists\) {}; ($PID) out> /tmp/friendlock1; chmod 664 /tmp/friendlock1"
 
 # Get list of all boards.
 source ./finding_friends/get_board_map.nu
 
 # Find free boards.
-let free_boards = ($boards | where { |i| (lsof -t $i.usb_path) == "" })
+let free_boards = ($boards | where { |i| (flock -n $i.usb_path echo 1) == "1" })
 
 # Take first n/2 free boards.
 let ping_boards = ($free_boards | first (($free_boards | length) - 1))
