@@ -2,6 +2,9 @@
 
 This repository contains all of the source code for UCSC's 2023 eCTF competition work.
 
+## Contributing
+See the [contribution guidelines](CONTRIBUTING.md) for guidelines on how to contribute.
+
 ## How to connect to our test server
 1. Accept the Tailscale invite and install Tailscale. Ask on Discord if you don't have an invite.
 2. SSH onto the server with `ssh ectf@plantmachineectf.tail25abc.ts.net`. If you don't have your SSH key set up on the server, ask on Discord.
