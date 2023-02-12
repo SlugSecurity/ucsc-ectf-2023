@@ -3,6 +3,7 @@ members = [
     "car",
     "fob",
     "util",
+    "tests",
     "finding_friends/friendly_ping",
     "finding_friends/friendly_pong"
 ]
