@@ -2,7 +2,9 @@
 members = [
     "car",
     "fob",
-    "util"
+    "util",
+    "finding_friends/friendly_ping",
+    "finding_friends/friendly_pong"
 ]
 
 [profile.dev]

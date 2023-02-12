@@ -244,6 +244,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "friendly_ping"
+version = "0.1.0"
+dependencies = [
+ "cortex-m 0.7.7",
+ "cortex-m-rt",
+ "embedded-hal",
+ "panic-halt",
+ "tm4c123x",
+ "tm4c123x-hal",
+]
+
+[[package]]
+name = "friendly_pong"
+version = "0.1.0"
+dependencies = [
+ "cortex-m 0.7.7",
+ "cortex-m-rt",
+ "embedded-hal",
+ "panic-halt",
+ "tm4c123x",
+ "tm4c123x-hal",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,0 +1,15 @@
+[package]
+name = "friendly_pong"
+version = "0.1.0"
+edition = "2021"
+authors = ["2023 UCSC eCTF Team"]
+categories = ["embedded", "no-std"]
+license = "MIT"
+
+[dependencies]
+cortex-m-rt = "0.7.2"
+panic-halt = "0.2.0"
+tm4c123x-hal = { version = "0.10.2", features = ["rt"] }
+cortex-m = "0.7.7"
+tm4c123x = "0.9.0"
+embedded-hal = "0.2.7"
