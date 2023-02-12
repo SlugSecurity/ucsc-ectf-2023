@@ -33,6 +33,7 @@ build:
   artifacts:
     paths:
       - target/thumbv7em-none-eabihf/release
+    expire_in: 1 day
 
 pages:
   stage: deploy
@@ -46,5 +47,6 @@ pages:
   artifacts:
     paths:
       - public
+    expire_in: 1 day
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
