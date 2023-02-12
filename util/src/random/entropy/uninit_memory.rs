@@ -1,3 +1,4 @@
+use crate::RuntimePeripherals;
 use core::{ffi::c_uchar, marker::PhantomData, mem::MaybeUninit};
 
 use rand_chacha::{
@@ -7,7 +8,6 @@ use rand_chacha::{
 
 use super::EntropySource;
 use sha3::{Digest, Sha3_256};
-use tm4c123x_hal::Peripherals;
 
 /// Gets the size of the uninitialized memory buffer from the rand_uninit_memory library header file.
 const fn get_random_bytes_size() -> usize {
@@ -127,13 +127,13 @@ unsafe extern "aapcs" fn new_rand_callback(uninit_memory: *mut MaybeUninit<c_uch
 }
 
 /// This entropy source gathers entropy from uninitialized memory.
-pub struct UninitMemory<T: EntropySource> {
+pub(crate) struct UninitMemory<T: EntropySource> {
     next: T,
     remove_send_sync: PhantomData<*const ()>, // Prevents UninitMemory from being Send or Sync.
 }
 
 impl<T: EntropySource> EntropySource for UninitMemory<T> {
-    fn init(peripherals: &mut Peripherals) -> Self {
+    fn init(peripherals: &mut RuntimePeripherals) -> Self {
         unsafe {
             // SAFETY: This function call is safe due to the previous safety justifications on
             // init_random_bytes() and new_rand_callback().

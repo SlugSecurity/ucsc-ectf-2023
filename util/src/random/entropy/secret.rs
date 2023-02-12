@@ -1,14 +1,14 @@
 use super::EntropySource;
+use crate::RuntimePeripherals;
 use sha3::Sha3_256;
-use tm4c123x_hal::Peripherals;
 
 /// This entropy source is a constant secret value.
-pub struct Secret<T: EntropySource> {
+pub(crate) struct Secret<T: EntropySource> {
     next: T,
 }
 
 impl<T: EntropySource> EntropySource for Secret<T> {
-    fn init(peripherals: &mut Peripherals) -> Self {
+    fn init(peripherals: &mut RuntimePeripherals) -> Self {
         todo!("Finish host secret entropy source implementation.");
 
         Secret {

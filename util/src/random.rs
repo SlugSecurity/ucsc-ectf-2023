@@ -20,7 +20,7 @@ use rand_chacha::{
 };
 
 use self::entropy::{Adc, ClockDrift, EntropyHasher, Secret, UninitMemory};
-use tm4c123x_hal::Peripherals;
+use crate::RuntimePeripherals;
 
 static MAIN_CSPRNG: OnceCell<Mutex<RefCell<ChaCha20Rng>>> = OnceCell::new();
 static SECONDARY_CSPRNG: OnceCell<Mutex<RefCell<ChaCha20Rng>>> = OnceCell::new();
@@ -30,7 +30,7 @@ static SECONDARY_CSPRNG: OnceCell<Mutex<RefCell<ChaCha20Rng>>> = OnceCell::new()
 /// secondary CSPRNG will have been initialized by the time the main CSPRNG is to be initialized.
 ///
 /// Will do nothing if called more than once.
-pub fn init_rng(peripherals: &mut Peripherals) {
+pub(crate) fn init_rng(peripherals: &mut RuntimePeripherals) {
     SECONDARY_CSPRNG.get_or_init(|| {
         Mutex::new(RefCell::new(ChaCha20Rng::from_seed(
             // We use the secret twice here to make this entropy hash different from the one used to
@@ -49,7 +49,7 @@ pub fn init_rng(peripherals: &mut Peripherals) {
 /// Fills a slice with random bytes from the main CSPRNG.
 ///
 /// Panics if the main CSPRNG has not been initialized yet.
-pub fn fill_rand_slice(dest: &mut [u8]) {
+pub(crate) fn fill_rand_slice(dest: &mut [u8]) {
     interrupt::free(|c| {
         MAIN_CSPRNG
             .get()
@@ -63,7 +63,7 @@ pub fn fill_rand_slice(dest: &mut [u8]) {
 /// Fills a slice with random bytes from the secondary CSPRNG.
 ///
 /// Panics if the secondary CSPRNG has not been initialized yet.
-pub fn fill_rand_slice_secondary(dest: &mut [u8]) {
+pub(crate) fn fill_rand_slice_secondary(dest: &mut [u8]) {
     interrupt::free(|c| {
         SECONDARY_CSPRNG
             .get()
