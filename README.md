@@ -13,9 +13,9 @@ See the [contribution guidelines](CONTRIBUTING.md) for guidelines on how to cont
 ## How to test the project with Podman
 1. Change the working directory to the main project directory or your own copy of it.
 2. Run `./finding_friends.nu` to grab a pair of boards for yourself.
-3. (Optional) Run `tmux` or `screen` to start a terminal multiplexer. This will be important if you want to debug two boards at once.
+3. (OPTIONAL) Run `tmux` or `screen` to start a terminal multiplexer. This will be important if you want to debug two boards at once.
 4. Run `./run_podman.nu`, specifying the project to test as an argument. For example, to test the car project, run `./run_podman.nu ucsc-ectf-car`. Valid projects are `ucsc-ectf-car` and `ucsc-ectf-fob`. This will build the firmware and run it on the board with GDB. The firmware execution will be paused at the first instruction. Use the `continue` command to continue execution.
-5 (Optional) If for whatever reason you need to know what boards you have grabbed, you can run `./grabbed_boards.nu`.
+5. (OPTIONAL) If for whatever reason you need to know what boards you have grabbed, you can run `./grabbed_boards.nu`.
 
 ## How to test the project with a manually setup development environment (DO NOT DO THIS UNLESS YOU KNOW WHAT YOU ARE DOING)
 1. Run `openocd -f board/ti_ek-tm4c123gxl.cfg`. This will start up an OpenOCD server, which will be used with GDB later to debug the firmware. This command requires the board to be plugged in.
