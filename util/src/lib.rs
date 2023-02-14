@@ -4,6 +4,7 @@
 #![no_std]
 
 use tm4c123x_hal::{
+    delay::Delay,
     sysctl::{
         Clocks, CrystalFrequency, Oscillator, PllOutputFrequency, PowerControl, Sysctl, SysctlExt,
         SystemClock,
@@ -36,6 +37,17 @@ fn initialize_sysctl(mut sysctl: Sysctl) -> (PowerControl, Clocks) {
 /// All peripherals, but with the system clock and power control initialized.
 #[allow(dead_code)]
 pub(crate) struct RuntimePeripherals {
+    pub cbp: CBP,
+    pub cpuid: CPUID,
+    pub dcb: DCB,
+    pub dwt: DWT,
+    pub fpb: FPB,
+    pub fpu: FPU,
+    pub itm: ITM,
+    pub mpu: MPU,
+    pub nvic: NVIC,
+    pub scb: SCB,
+    pub tpiu: TPIU,
     pub watchdog0: WATCHDOG0,
     pub watchdog1: WATCHDOG1,
     pub gpio_porta: GPIO_PORTA,
@@ -95,13 +107,25 @@ pub(crate) struct RuntimePeripherals {
     pub udma: UDMA,
     pub power_control: PowerControl,
     pub clocks: Clocks,
+    pub delay: Delay,
 }
 
-impl From<Peripherals> for RuntimePeripherals {
-    fn from(peripherals: Peripherals) -> Self {
+impl From<(CorePeripherals, Peripherals)> for RuntimePeripherals {
+    fn from((core_peripherals, peripherals): (CorePeripherals, Peripherals)) -> Self {
         let sysctl = initialize_sysctl(peripherals.SYSCTL.constrain());
 
         RuntimePeripherals {
+            cbp: core_peripherals.CBP,
+            cpuid: core_peripherals.CPUID,
+            dcb: core_peripherals.DCB,
+            dwt: core_peripherals.DWT,
+            fpb: core_peripherals.FPB,
+            fpu: core_peripherals.FPU,
+            itm: core_peripherals.ITM,
+            mpu: core_peripherals.MPU,
+            nvic: core_peripherals.NVIC,
+            scb: core_peripherals.SCB,
+            tpiu: core_peripherals.TPIU,
             watchdog0: peripherals.WATCHDOG0,
             watchdog1: peripherals.WATCHDOG1,
             gpio_porta: peripherals.GPIO_PORTA,
@@ -161,6 +185,7 @@ impl From<Peripherals> for RuntimePeripherals {
             udma: peripherals.UDMA,
             power_control: sysctl.0,
             clocks: sysctl.1,
+            delay: Delay::new(core_peripherals.SYST, &sysctl.1),
         }
     }
 }
