@@ -18,7 +18,7 @@ trap 'kill $(jobs -p) &> /dev/null' EXIT
 BUS_PORT=""
 # Find which board is open.
 for b in $BOARDS; do
-    openocd -f $BOARD_CFG -c "tcl_port disabled" -c "telnet_port disabled" -c "gdb_port 3333" -c "adapter usb location $b" -c "init" -c "exit" &&
+    openocd -f $BOARD_CFG -c "tcl_port disabled" -c "telnet_port disabled" -c "gdb_port 3333" -c "adapter usb location $b" -c "init" -c "exit" 2> /dev/null &&
     BUS_PORT=$b &&
     break
 done
@@ -29,9 +29,11 @@ if [ $BUS_PORT = "" ]; then
 fi
 
 # Start OpenOCD.
-openocd -f $BOARD_CFG -c "tcl_port disabled" -c "telnet_port disabled" -c "gdb_port 3333" -c "adapter usb location $b" &
+openocd -f $BOARD_CFG -c "tcl_port disabled" -c "telnet_port disabled" -c "gdb_port 3333" -c "adapter usb location $b" 2> /dev/null &
 
 # Build and run the project in GDB with the temporary .gdbinit file.
-cargo run --bin $1
+cargo build --bin $1
+echo -e "\033[0;31mYou are currently debugging $BUS_PORT.\033[0m"
+arm-none-eabi-gdb -q /mnt/target/thumbv7em-none-eabihf/debug/${1}
 
 exit 0

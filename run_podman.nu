@@ -12,6 +12,11 @@ def main [project: string] {
     # Collect locked boards from environment.
     source ./grabbed_boards.nu
     
-    podman build --tag ectf .
-    podman run -v ./:/mnt --rm --privileged -e $"BOARDS=($BOARDS.bus_port | to text)" -it ectf ./runner.sh $project
+    # Avoid rebuilding the image.
+    try {
+        podman run -v ./:/mnt --rm --privileged -e $"BOARDS=($BOARDS.bus_port | to text)" -it ectf ./runner.sh $project
+    } catch {
+        podman build --tag ectf .
+        podman run -v ./:/mnt --rm --privileged -e $"BOARDS=($BOARDS.bus_port | to text)" -it ectf ./runner.sh $project
+    }
 }

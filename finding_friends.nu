@@ -26,10 +26,10 @@ source ./finding_friends/get_board_map.nu
 # Find free boards.
 let free_boards = ($boards | where { |i| (flock -n $i.usb_path echo 1) == "1" })
 
-# Take first n/2 free boards.
+# Take all but the last board.
 let ping_boards = ($free_boards | first (($free_boards | length) - 1))
 
-# Take the rest of the free boards.
+# Take the last board.
 let pong_board = ($free_boards | last)
 
 print "Ping Boards"
@@ -52,7 +52,12 @@ $ping_boards | each { |i|
 
 # Finding friends!
 let bp = (head -n 5 $pong_board.tty | str trim | split row "\n" | get 2)
-let friend = ($boards | where { |i| $bp == $i.bus_port } | first)
+let friend = try {
+    $boards | where { |i| $bp == $i.bus_port } | first
+} catch {
+    print "No free board pairs could be found! Try again!"
+    exit 1
+}
 
 # Set environment variables to pass to child shell.
 let-env BOARDS = ([$pong_board, $friend] | to nuon)
@@ -61,3 +66,5 @@ print $"Your boards are ($pong_board.bus_port) and ($friend.bus_port)."
 
 # Lock both USB devices and spawn child shell.
 flock $pong_board.usb_path flock $friend.usb_path nu -c "rm /tmp/friendlock1; sh -c $env.SHELL"
+
+print $"Releasing ($pong_board.bus_port) and ($friend.bus_port)."
