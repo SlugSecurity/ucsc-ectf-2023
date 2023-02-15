@@ -13,10 +13,12 @@ extern crate rand_chacha;
 extern crate sha3;
 extern crate tm4c123x_hal;
 
+// TODO: pub mod button;
 pub mod communication;
 pub(crate) mod random;
 pub mod runtime;
-// TODO: pub mod button;
+pub mod timer;
 
 pub use runtime::Runtime;
 pub use runtime::RuntimePeripherals;
+pub use timer::Timer;

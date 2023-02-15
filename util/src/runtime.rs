@@ -1,30 +1,65 @@
 //! This module contains the runtime struct, which is used to perform initialization steps, manage
 //! peripherals, provides random number generation, and manage an interrupt loop.
 
-use crate::random;
+use crate::{random, Timer};
+use core::time::Duration;
 use cortex_m::interrupt;
 use tm4c123x_hal::{
     delay::Delay,
     sysctl::{
-        Clocks, CrystalFrequency, Oscillator, PllOutputFrequency, PowerControl, Sysctl, SysctlExt,
-        SystemClock,
+        self, Clocks, CrystalFrequency, Domain, Oscillator, PllOutputFrequency, PowerControl,
+        PowerState, RunMode, Sysctl, SysctlExt, SystemClock,
     },
     tm4c123x::*,
 };
 
 /// The runtime struct.
-pub struct Runtime {
+pub struct Runtime<'a> {
     // TODO: Add controllers.
+    hib: &'a HIB,
 }
 
-impl Runtime {
+impl<'a> Runtime<'a> {
+    /// Initializes the hibernation peripheral.
+    fn init_hib(hib: &mut HIB, power_control: &PowerControl) {
+        // Enable hibernation module. This is enabled by default, but we enable it here just in case.
+        sysctl::control_power(
+            power_control,
+            Domain::Hibernation,
+            RunMode::Run,
+            PowerState::On,
+        );
+
+        // Reset hibernation module for good measure.
+        sysctl::reset(power_control, Domain::Hibernation);
+
+        // Initialize hibernation clock.
+        hib.ctl.write(|w| {
+            // Use low-frequency oscillator and enable clock.
+            w.oscbyp().clear_bit().clk32en().set_bit()
+        });
+
+        // Wait for hibernation module to be ready.
+        while hib.ctl.read().wrc().bit_is_clear() {}
+
+        // Enable RTC.
+        // SAFETY: Writing to this register is safe because it is data-race free. This guarantee
+        // comes from the fact that the hibernation peripheral is borrowed mutably.
+        hib.ctl
+            .modify(|r, w| unsafe { w.bits(r.bits()).rtcen().set_bit() });
+
+        // Wait for hibernation module to be ready.
+        while hib.ctl.read().wrc().bit_is_clear() {}
+    }
+
     /// Initializes the runtime.
     ///
     /// There is a very small period of time where the interrupt handlers can run, but not the closure
     /// passed in `Runtime::start()` due to the ending of the interrupt-free context.
-    pub fn new(rt_peripherals: &mut RuntimePeripherals) -> Self {
+    pub fn new(rt_peripherals: &'a mut RuntimePeripherals) -> Self {
         interrupt::free(|_| {
             random::init_rng(rt_peripherals);
+            Self::init_hib(&mut rt_peripherals.hib, &rt_peripherals.power_control);
 
             todo!(
                 "Call init functions of communication module, button module, EEPROM controller, \
@@ -32,7 +67,9 @@ impl Runtime {
             );
         });
 
-        Runtime {}
+        Runtime {
+            hib: &rt_peripherals.hib,
+        }
     }
 
     /// Runs the event loop.
@@ -43,6 +80,11 @@ impl Runtime {
     }
 
     // TODO: Add methods for returning controllers.
+
+    /// Creates a timer from a duration.
+    pub fn create_timer(&self, duration: Duration) -> Timer {
+        Timer::new(&self.hib, duration)
+    }
 
     /// Fills a slice with random bytes from the main CSPRNG.
     pub fn fill_rand_slice(&self, dest: &mut [u8]) {
