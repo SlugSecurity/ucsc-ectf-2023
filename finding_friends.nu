@@ -9,6 +9,7 @@ let PROGRAM_CMD = { |usb bin| $"openocd -d0 -f board/ti_ek-tm4c123gxl.cfg -c 'tc
 
 if "BOARDS" in $env {
     print "You already have a lock on a pair of boards! Try again in another terminal if you really need more boards."
+    exit 1
 }
 
 # Remove friendless friend-locks.
