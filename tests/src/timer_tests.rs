@@ -13,6 +13,7 @@ pub fn run(hib: &HIB, delay: &mut Delay) {
     immediate_return(hib, delay);
 }
 
+/// Tests if the timer is done 1 ms after the duration of the timer.
 fn too_slow_ms_test(hib: &HIB, delay: &mut Delay) {
     let new_timer = Timer::new(hib, Duration::from_millis(629));
 
@@ -21,6 +22,7 @@ fn too_slow_ms_test(hib: &HIB, delay: &mut Delay) {
     assert!(new_timer.poll())
 }
 
+/// Tests if the timer isn't done 1 ms before the duration of the timer.
 fn too_fast_ms_test(hib: &HIB, delay: &mut Delay) {
     let new_timer = Timer::new(hib, Duration::from_millis(548));
 
@@ -29,6 +31,7 @@ fn too_fast_ms_test(hib: &HIB, delay: &mut Delay) {
     assert!(!new_timer.poll())
 }
 
+/// Tests if the timer is done 1 ms after the duration of the timer 1000 times.
 fn too_slow_ms_repeated_test(hib: &HIB, delay: &mut Delay) {
     for _ in 0..1000 {
         let new_timer = Timer::new(hib, Duration::from_millis(1));
@@ -39,6 +42,7 @@ fn too_slow_ms_repeated_test(hib: &HIB, delay: &mut Delay) {
     }
 }
 
+/// Tests if the timer isn't done 1 ms before the duration of the timer 1000 times.
 fn too_fast_ms_repeated_test(hib: &HIB, delay: &mut Delay) {
     for _ in 0..1000 {
         let new_timer = Timer::new(hib, Duration::from_millis(2));
@@ -49,6 +53,7 @@ fn too_fast_ms_repeated_test(hib: &HIB, delay: &mut Delay) {
     }
 }
 
+/// Checks if a timer with a duration of 0 expires immediately.
 fn immediate_return(hib: &HIB, _delay: &mut Delay) {
     let new_timer = Timer::new(hib, Duration::from_secs(0));
 
