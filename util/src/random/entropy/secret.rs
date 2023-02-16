@@ -1,7 +1,7 @@
 use super::EntropySource;
 use crate::{eeprom::EepromController, RuntimePeripherals};
 use sha3::{digest::Update, Sha3_256};
-use ucsc_ectf_eeprom_layout::{EepromReadOnlyField, KEY_SIZE};
+use ucsc_ectf_eeprom_layout::{EepromReadOnlyField, SECRET_SIZE};
 use zeroize::Zeroize;
 
 /// This entropy source is a constant secret value.
@@ -9,12 +9,12 @@ use zeroize::Zeroize;
 /// This struct should not be moved to ensure the secret gets zeroed out on drop.
 pub(crate) struct Secret<T: EntropySource> {
     next: T,
-    secret: [u8; KEY_SIZE],
+    secret: [u8; SECRET_SIZE],
 }
 
 impl<T: EntropySource> EntropySource for Secret<T> {
     fn init(peripherals: &mut RuntimePeripherals) -> Self {
-        let mut secret = [0; KEY_SIZE];
+        let mut secret = [0; SECRET_SIZE];
 
         {
             let mut eeprom =

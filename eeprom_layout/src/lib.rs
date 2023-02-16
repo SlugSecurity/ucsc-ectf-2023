@@ -9,8 +9,14 @@ const EEPROM_START_ADDRESS: usize = 0x000;
 /// The start address of the EEPROM reserved message space.
 const EEPROM_MESSAGES_START_ADDRESS: usize = 0x700;
 
-/// The size of encryption keys. 256 bits = 32 bytes.
-pub const KEY_SIZE: usize = 32;
+/// The size of encryption secrets. 256 bits = 32 bytes.
+pub const SECRET_SIZE: usize = 32;
+
+/// The size of Postcard-encoded signatures.
+pub const SIGNATURE_SIZE: usize = 64;
+
+/// The max size of Postcard-encoded public keys.
+pub const PUBLIC_KEY_SIZE: usize = 128;
 
 /// The size of unlock/feature messages.
 pub const MESSAGE_SIZE: usize = 64;
@@ -24,40 +30,46 @@ pub const PAIRING_BYTE_SIZE: usize = 1;
 /// The size of the pairing PIN. 6 hex digits = 3 bytes.
 pub const PAIRING_PIN_SIZE: usize = 3;
 
-/// The bounds of the pairing key EEPROM field.
-const PAIRING_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+/// The bounds of the pairing secret EEPROM field.
+const PAIRING_SECRET_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     address: EEPROM_START_ADDRESS,
-    size: KEY_SIZE,
+    size: SECRET_SIZE,
 };
 
-/// The bounds of the pairing PIN encryption key EEPROM field.
-const PAIRING_PIN_ENCRYPTION_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
-    address: PAIRING_KEY_BOUNDS.address + PAIRING_KEY_BOUNDS.size,
-    size: KEY_SIZE,
+/// The bounds of the pairing public key signature EEPROM field.
+const PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+    address: PAIRING_SECRET_BOUNDS.address + PAIRING_SECRET_BOUNDS.size,
+    size: SIGNATURE_SIZE,
 };
 
-/// The bounds of the feature encryption key EEPROM field.
-const FEATURE_ENCRYPTION_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
-    address: PAIRING_PIN_ENCRYPTION_KEY_BOUNDS.address + PAIRING_PIN_ENCRYPTION_KEY_BOUNDS.size,
-    size: KEY_SIZE,
+/// The bounds of the pairing verifying key EEPROM field.
+const PAIRING_VERIFYING_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+    address: PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS.address + PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS.size,
+    size: PUBLIC_KEY_SIZE,
+};
+
+/// The bounds of the feature verifying key EEPROM field.
+const FEATURE_VERIFYING_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+    address: PAIRING_VERIFYING_KEY_BOUNDS.address + PAIRING_VERIFYING_KEY_BOUNDS.size,
+    size: PUBLIC_KEY_SIZE,
 };
 
 /// The bounds of the secret seed EEPROM field.
 const SECRET_SEED_BOUNDS: EepromFieldBounds = EepromFieldBounds {
-    address: FEATURE_ENCRYPTION_KEY_BOUNDS.address + FEATURE_ENCRYPTION_KEY_BOUNDS.size,
-    size: KEY_SIZE,
+    address: FEATURE_VERIFYING_KEY_BOUNDS.address + FEATURE_VERIFYING_KEY_BOUNDS.size,
+    size: SECRET_SIZE,
 };
 
 /// The bounds of the unlock key 1 EEPROM field.
 const UNLOCK_KEY_ONE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     address: SECRET_SEED_BOUNDS.address + SECRET_SEED_BOUNDS.size,
-    size: KEY_SIZE,
+    size: SECRET_SIZE,
 };
 
 /// The bounds of the unlock key 2 EEPROM field.
 const UNLOCK_KEY_TWO_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     address: UNLOCK_KEY_ONE_BOUNDS.address + UNLOCK_KEY_ONE_BOUNDS.size,
-    size: KEY_SIZE,
+    size: SECRET_SIZE,
 };
 
 /// The bounds of the car ID EEPROM field.
@@ -105,13 +117,14 @@ const UNLOCK_MESSAGE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
 /// This enum specifies the fields of the EEPROM that can be read from, but not written to.
 #[derive(Copy, Clone)]
 pub enum EepromReadOnlyField {
-    /// The key used to facilitate encrypted communications between an unpaired key fob and paired key
-    /// fob for pairing.
-    PairingKey,
-    /// The key used to encrypt the pairing PIN when sending to an unpaired key fob during pairing.
-    PairingPinEncryptionKey,
-    /// The key used to encrypt features when packaging.
-    FeatureEncryptionKey,
+    /// The secret of the key used for the Diffie-Hellman key exchange during pairing.
+    PairingSecret,
+    /// The signature of the public key used for the Diffie-Hellman key exchange during pairing.
+    PairingPublicKeySignature,
+    /// The verifying key used for the Diffie-Hellman key exchange during pairing.
+    PairingVerifyingKey,
+    /// The verifying key used to verify packaged features.
+    FeatureVerifyingKey,
     /// The key used as a starting point for the RNG seed hash.
     SecretSeed,
     /// The message to be printed when feature three is enabled.
@@ -159,9 +172,10 @@ pub trait EepromReadField: Copy {
 impl EepromReadField for EepromReadOnlyField {
     fn get_field_bounds(&self) -> EepromFieldBounds {
         match self {
-            Self::PairingKey => PAIRING_KEY_BOUNDS,
-            Self::PairingPinEncryptionKey => PAIRING_PIN_ENCRYPTION_KEY_BOUNDS,
-            Self::FeatureEncryptionKey => FEATURE_ENCRYPTION_KEY_BOUNDS,
+            Self::PairingSecret => PAIRING_SECRET_BOUNDS,
+            Self::PairingPublicKeySignature => PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS,
+            Self::PairingVerifyingKey => PAIRING_VERIFYING_KEY_BOUNDS,
+            Self::FeatureVerifyingKey => FEATURE_VERIFYING_KEY_BOUNDS,
             Self::SecretSeed => SECRET_SEED_BOUNDS,
             Self::FeatureThreeMessage => FEATURE_THREE_MESSAGE_BOUNDS,
             Self::FeatureTwoMessage => FEATURE_TWO_MESSAGE_BOUNDS,

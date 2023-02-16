@@ -3,13 +3,14 @@
 use core::iter;
 use tm4c123x_hal::{sysctl::PowerControl, tm4c123x::EEPROM};
 use ucsc_ectf_util::eeprom::{
-    EepromController, EepromReadField, EepromReadOnlyField, EepromReadWriteField, MESSAGE_SIZE,
+    EepromController, EepromReadField, EepromReadOnlyField, EepromReadWriteField, PUBLIC_KEY_SIZE,
 };
 
-const READ_ONLY_FIELDS: [EepromReadOnlyField; 8] = [
-    EepromReadOnlyField::PairingKey,
-    EepromReadOnlyField::PairingPinEncryptionKey,
-    EepromReadOnlyField::FeatureEncryptionKey,
+const READ_ONLY_FIELDS: [EepromReadOnlyField; 9] = [
+    EepromReadOnlyField::PairingSecret,
+    EepromReadOnlyField::PairingPublicKeySignature,
+    EepromReadOnlyField::PairingVerifyingKey,
+    EepromReadOnlyField::FeatureVerifyingKey,
     EepromReadOnlyField::SecretSeed,
     EepromReadOnlyField::FeatureThreeMessage,
     EepromReadOnlyField::FeatureTwoMessage,
@@ -42,7 +43,7 @@ pub fn run(eeprom_peripheral: &mut EEPROM, power_control: &PowerControl) {
 
 /// Tests reads of default EEPROM values (0xFF for all bytes).
 fn read_default(eeprom: &mut EepromController) {
-    let mut data = [0; MESSAGE_SIZE];
+    let mut data = [0; PUBLIC_KEY_SIZE];
 
     for field in READ_ONLY_FIELDS.into_iter() {
         eeprom.read_slice(field, &mut data).unwrap();
@@ -69,8 +70,8 @@ fn read_default(eeprom: &mut EepromController) {
 fn basic_write_read_test(eeprom: &mut EepromController) {
     const TEST_DATA_1: u8 = 0x55; // Alternate 0 and 1.
     const TEST_DATA_2: u8 = 0xAA; // Alternate 1 and 0.
-    let mut data = [0; MESSAGE_SIZE];
-    let mut read_data = [0; MESSAGE_SIZE];
+    let mut data = [0; PUBLIC_KEY_SIZE];
+    let mut read_data = [0; PUBLIC_KEY_SIZE];
     let mut test_data_iter = iter::once(TEST_DATA_1)
         .chain(iter::once(TEST_DATA_2))
         .cycle();
@@ -91,7 +92,7 @@ fn basic_write_read_test(eeprom: &mut EepromController) {
 fn write_read_bleed_test(eeprom: &mut EepromController) {
     const TEST_DATA_1: u8 = 0x55; // Alternate 0 and 1.
     const TEST_DATA_2: u8 = 0xAA; // Alternate 1 and 0.
-    let mut data = [0; MESSAGE_SIZE];
+    let mut data = [0; PUBLIC_KEY_SIZE];
 
     // Set all writable fields to the default values before starting test.
     for field in READ_WRITE_FIELDS.into_iter() {
@@ -100,7 +101,7 @@ fn write_read_bleed_test(eeprom: &mut EepromController) {
     }
 
     // Test that writing to one field does not affect another field.
-    let mut read_data = [0; MESSAGE_SIZE];
+    let mut read_data = [0; PUBLIC_KEY_SIZE];
     let mut test_data_iter = iter::once(TEST_DATA_1)
         .chain(iter::once(TEST_DATA_2))
         .cycle();
