@@ -9,7 +9,7 @@ stages:
 before_script:
   - pacman -Sy
   - pacman -S --noconfirm rustup
-  - rustup default stable
+  - rustup default nightly
   - rustup target add thumbv7em-none-eabihf
   - rustup component add clippy
   - pacman -S --noconfirm arm-none-eabi-gcc gcc make git

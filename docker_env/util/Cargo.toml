@@ -1,3 +1,4 @@
+cargo-features = ["per-package-target"]
 [package]
 name = "ucsc-ectf-util"
 version = "0.1.0"
@@ -5,6 +6,13 @@ edition = "2021"
 authors = ["2023 UCSC eCTF Team"]
 categories = ["embedded", "no-std"]
 license = "MIT"
+forced-target = "thumbv7em-none-eabihf"
+
+[profile.release]
+lto = true
+codegen-units = 1
+debug = false
+strip = true
 
 [dependencies]
 cortex-m = "0.7.7"
@@ -24,3 +32,9 @@ hex = {version = "0.4", default-features = false }
 
 [build-dependencies]
 ucsc-ectf-eeprom-layout = { path = "../eeprom_layout" }
+
+# Make sure tm4c123x and tm4c123x-hal use the latest cortex-m and cortex-m-rt crates to fix UB.
+
+[patch.crates-io]
+tm4c123x = { git = "https://git.ucsc.edu/ucsc-ectf-2023/dslite2svd.git", branch = "v0.9.0-update" }
+tm4c123x-hal = { git = "https://git.ucsc.edu/ucsc-ectf-2023/tm4c-hal.git", branch = "tm4c123x-hal-0.10.2-update" }
