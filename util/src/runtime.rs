@@ -1,21 +1,45 @@
 //! This module contains the runtime struct, which is used to perform initialization steps, manage
 //! peripherals, provides random number generation, and manage an interrupt loop.
 
-use crate::{eeprom::EepromController, random, Timer};
+use crate::{
+    communication::{Uart0Controller, Uart1Controller},
+    eeprom::EepromController,
+    random, Timer,
+};
+use chacha20poly1305::Key;
 use core::time::Duration;
 use tm4c123x_hal::{
     delay::Delay,
+    gpio::{
+        gpiob::{PB0, PB1},
+        AlternateFunction, GpioExt, PullUp, PushPull, AF1,
+    },
+    serial::{NewlineMode, Rx, RxPin, Serial, Tx, TxPin},
     sysctl::{
         self, Clocks, CrystalFrequency, Domain, Oscillator, PllOutputFrequency, PowerControl,
         PowerState, RunMode, Sysctl, SysctlExt, SystemClock,
     },
+    time::Bps,
     tm4c123x::*,
 };
+
+/// Bits-per-second for UART communications.
+const BPS: u32 = 57600;
 
 /// The runtime struct.
 pub struct Runtime<'a> {
     /// The EEPROM controller.
     pub eeprom: EepromController<'a>,
+
+    /// The controller for UART0. See the documentation for [`Uart0Controller`] for more details.
+    pub uart0_controller: Uart0Controller<'a, (), ()>,
+
+    /// The controller for UART1. See the documentation for [`Uart1Controller`] for more details.
+    pub uart1_controller: Uart1Controller<
+        'a,
+        PB1<AlternateFunction<AF1, PullUp>>,
+        PB0<AlternateFunction<AF1, PushPull>>,
+    >,
     // TODO: Add controllers.
     hib: &'a HIB,
 }
@@ -54,20 +78,35 @@ impl<'a> Runtime<'a> {
     }
 
     /// Initializes the runtime.
-    pub fn new(rt_peripherals: &'a mut RuntimePeripherals) -> Self {
-        random::init_rng(rt_peripherals);
+    pub fn new(
+        peripherals: &'a mut RuntimePeripherals,
+        uart1_rx_key: &Key,
+        uart1_tx_key: &Key,
+    ) -> Self {
+        random::init_rng(peripherals);
 
         let eeprom =
-            EepromController::new(&mut rt_peripherals.eeprom, &rt_peripherals.power_control)
-                .unwrap();
+            EepromController::new(&mut peripherals.eeprom, &peripherals.power_control).unwrap();
 
         // todo!("Call init functions of button module, EEPROM controller, etc.).");
 
-        Self::init_hib(&mut rt_peripherals.hib, &rt_peripherals.power_control);
+        Self::init_hib(&mut peripherals.hib, &peripherals.power_control);
+
+        let uart0_controller =
+            Uart0Controller::without_key(&mut peripherals.uart0_tx, &mut peripherals.uart0_rx);
+
+        let uart1_controller = Uart1Controller::new(
+            &mut peripherals.uart1_tx,
+            &mut peripherals.uart1_rx,
+            uart1_rx_key,
+            uart1_tx_key,
+        );
 
         Runtime {
             eeprom,
-            hib: &rt_peripherals.hib,
+            hib: &peripherals.hib,
+            uart0_controller,
+            uart1_controller,
         }
     }
 
@@ -102,6 +141,38 @@ fn initialize_sysctl(mut sysctl: Sysctl) -> (PowerControl, Clocks) {
     (sysctl.power_control, sysctl.clock_setup.freeze())
 }
 
+macro_rules! init_uart {
+    ($typ:ty, $fn_name: ident, $to_call: ident) => {
+        fn $fn_name<TX, RX>(
+            uart: $typ,
+            tx: TX,
+            rx: RX,
+            clocks: &Clocks,
+            pc: &PowerControl,
+        ) -> (Tx<$typ, TX, ()>, Rx<$typ, RX, ()>)
+        where
+            TX: TxPin<$typ>,
+            RX: RxPin<$typ>,
+        {
+            Serial::$to_call(
+                uart,
+                tx,
+                rx,
+                (),
+                (),
+                Bps(BPS),
+                NewlineMode::Binary,
+                clocks,
+                pc,
+            )
+            .split()
+        }
+    };
+}
+
+init_uart!(UART0, initialize_uart0, uart0);
+init_uart!(UART1, initialize_uart1, uart1);
+
 /// All peripherals and core peripherals, but with the system clock, power control, and delay
 /// initialized.
 #[allow(dead_code, missing_docs)]
@@ -120,15 +191,12 @@ pub struct RuntimePeripherals {
     pub watchdog0: WATCHDOG0,
     pub watchdog1: WATCHDOG1,
     pub gpio_porta: GPIO_PORTA,
-    pub gpio_portb: GPIO_PORTB,
     pub gpio_portc: GPIO_PORTC,
     pub gpio_portd: GPIO_PORTD,
     pub ssi0: SSI0,
     pub ssi1: SSI1,
     pub ssi2: SSI2,
     pub ssi3: SSI3,
-    pub uart0: UART0,
-    pub uart1: UART1,
     pub uart2: UART2,
     pub uart3: UART3,
     pub uart4: UART4,
@@ -177,11 +245,25 @@ pub struct RuntimePeripherals {
     pub power_control: PowerControl,
     pub clocks: Clocks,
     pub delay: Delay,
+    pub uart0_tx: Tx<UART0, (), ()>,
+    pub uart0_rx: Rx<UART0, (), ()>,
+    pub uart1_tx: Tx<UART1, PB1<AlternateFunction<AF1, PullUp>>, ()>,
+    pub uart1_rx: Rx<UART1, PB0<AlternateFunction<AF1, PushPull>>, ()>,
 }
 
 impl From<(CorePeripherals, Peripherals)> for RuntimePeripherals {
     fn from((core_peripherals, peripherals): (CorePeripherals, Peripherals)) -> Self {
         let sysctl = initialize_sysctl(peripherals.SYSCTL.constrain());
+        let (uart0_tx, uart0_rx) =
+            initialize_uart0(peripherals.UART0, (), (), &sysctl.1, &sysctl.0);
+        let mut portb = peripherals.GPIO_PORTB.split(&sysctl.0);
+        let (uart1_tx, uart1_rx) = initialize_uart1(
+            peripherals.UART1,
+            portb.pb1.into_af_pull_up::<AF1>(&mut portb.control),
+            portb.pb0.into_af_push_pull::<AF1>(&mut portb.control),
+            &sysctl.1,
+            &sysctl.0,
+        );
 
         RuntimePeripherals {
             cbp: core_peripherals.CBP,
@@ -198,15 +280,12 @@ impl From<(CorePeripherals, Peripherals)> for RuntimePeripherals {
             watchdog0: peripherals.WATCHDOG0,
             watchdog1: peripherals.WATCHDOG1,
             gpio_porta: peripherals.GPIO_PORTA,
-            gpio_portb: peripherals.GPIO_PORTB,
             gpio_portc: peripherals.GPIO_PORTC,
             gpio_portd: peripherals.GPIO_PORTD,
             ssi0: peripherals.SSI0,
             ssi1: peripherals.SSI1,
             ssi2: peripherals.SSI2,
             ssi3: peripherals.SSI3,
-            uart0: peripherals.UART0,
-            uart1: peripherals.UART1,
             uart2: peripherals.UART2,
             uart3: peripherals.UART3,
             uart4: peripherals.UART4,
@@ -255,6 +334,10 @@ impl From<(CorePeripherals, Peripherals)> for RuntimePeripherals {
             power_control: sysctl.0,
             clocks: sysctl.1,
             delay: Delay::new(core_peripherals.SYST, &sysctl.1),
+            uart0_tx,
+            uart0_rx,
+            uart1_tx,
+            uart1_rx,
         }
     }
 }
