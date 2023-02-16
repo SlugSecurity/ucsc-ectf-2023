@@ -1,9 +1,9 @@
 [workspace]
 members = [
     "car",
-    "eeprom_layout",
+    "docker_env/eeprom_layout",
     "fob",
-    "util",
+    "docker_env/util",
     "tests",
     "finding_friends/friendly_ping",
     "finding_friends/friendly_pong"
