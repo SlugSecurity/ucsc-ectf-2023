@@ -18,7 +18,7 @@ impl<'a> Timer<'a> {
 
     /// Converts (seconds, subseconds) to subseconds.
     fn time_to_subseconds((sec, subsec): (u32, u16)) -> u64 {
-        return (sec as u64) * Self::SUBSECONDS_PER_SECOND + (subsec as u64);
+        (sec as u64) * Self::SUBSECONDS_PER_SECOND + (subsec as u64)
     }
 
     /// Gets the current time from the hibernation clock.

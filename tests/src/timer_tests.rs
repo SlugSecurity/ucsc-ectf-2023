@@ -16,7 +16,7 @@ pub fn run(hib: &HIB, delay: &mut Delay) {
 fn too_slow_ms_test(hib: &HIB, delay: &mut Delay) {
     let new_timer = Timer::new(hib, Duration::from_millis(629));
 
-    delay.delay_ms(630 as u32);
+    delay.delay_ms(630u32);
 
     assert!(new_timer.poll())
 }
@@ -24,7 +24,7 @@ fn too_slow_ms_test(hib: &HIB, delay: &mut Delay) {
 fn too_fast_ms_test(hib: &HIB, delay: &mut Delay) {
     let new_timer = Timer::new(hib, Duration::from_millis(548));
 
-    delay.delay_ms(547 as u32);
+    delay.delay_ms(547u32);
 
     assert!(!new_timer.poll())
 }
@@ -33,7 +33,7 @@ fn too_slow_ms_repeated_test(hib: &HIB, delay: &mut Delay) {
     for _ in 0..1000 {
         let new_timer = Timer::new(hib, Duration::from_millis(1));
 
-        delay.delay_ms(2 as u32);
+        delay.delay_ms(2u32);
 
         assert!(new_timer.poll());
     }
@@ -43,7 +43,7 @@ fn too_fast_ms_repeated_test(hib: &HIB, delay: &mut Delay) {
     for _ in 0..1000 {
         let new_timer = Timer::new(hib, Duration::from_millis(2));
 
-        delay.delay_ms(1 as u32);
+        delay.delay_ms(1u32);
 
         assert!(!new_timer.poll());
     }

@@ -49,7 +49,7 @@ fn read_default(eeprom: &mut EepromController) {
         eeprom.read_slice(field, &mut data).unwrap();
 
         assert!(&data[..field.get_field_bounds().size]
-            .into_iter()
+            .iter()
             .all(|&n| n == DEFAULT_EEPROM_DATA));
 
         data.fill(0);
@@ -59,7 +59,7 @@ fn read_default(eeprom: &mut EepromController) {
         eeprom.read_slice(field, &mut data).unwrap();
 
         assert!(&data[..field.get_field_bounds().size]
-            .into_iter()
+            .iter()
             .all(|&n| n == DEFAULT_EEPROM_DATA));
 
         data.fill(0);
@@ -83,7 +83,7 @@ fn basic_write_read_test(eeprom: &mut EepromController) {
         eeprom.read_slice(field, &mut read_data).unwrap();
 
         assert!(
-            &read_data[..field.get_field_bounds().size] == &data[..field.get_field_bounds().size]
+            read_data[..field.get_field_bounds().size] == data[..field.get_field_bounds().size]
         );
     }
 }
@@ -113,7 +113,7 @@ fn write_read_bleed_test(eeprom: &mut EepromController) {
         eeprom.read_slice(fields[1], &mut read_data).unwrap();
 
         assert!(&read_data[..fields[1].get_field_bounds().size]
-            .into_iter()
+            .iter()
             .all(|&n| n == DEFAULT_EEPROM_DATA));
     }
 }

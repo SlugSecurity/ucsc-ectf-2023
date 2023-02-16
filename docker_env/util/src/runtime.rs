@@ -26,6 +26,12 @@ use tm4c123x_hal::{
 /// Bits-per-second for UART communications.
 const BPS: u32 = 57600;
 
+/// The TX pin for UART 1.
+type Uart1TxPin = PB1<AlternateFunction<AF1, PullUp>>;
+
+/// The RX pin for UART 1.
+type Uart1RxPin = PB0<AlternateFunction<AF1, PushPull>>;
+
 /// The runtime struct.
 pub struct Runtime<'a> {
     /// The EEPROM controller.
@@ -35,11 +41,8 @@ pub struct Runtime<'a> {
     pub uart0_controller: Uart0Controller<'a, (), ()>,
 
     /// The controller for UART1. See the documentation for [`Uart1Controller`] for more details.
-    pub uart1_controller: Uart1Controller<
-        'a,
-        PB1<AlternateFunction<AF1, PullUp>>,
-        PB0<AlternateFunction<AF1, PushPull>>,
-    >,
+    pub uart1_controller: Uart1Controller<'a, Uart1TxPin, Uart1RxPin>,
+
     // TODO: Add controllers.
     hib: &'a HIB,
 }
@@ -78,6 +81,10 @@ impl<'a> Runtime<'a> {
     }
 
     /// Initializes the runtime.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the EEPROM controller cannot be initialized.
     pub fn new(
         peripherals: &'a mut RuntimePeripherals,
         uart1_rx_key: &Key,
@@ -88,7 +95,7 @@ impl<'a> Runtime<'a> {
         let eeprom =
             EepromController::new(&mut peripherals.eeprom, &peripherals.power_control).unwrap();
 
-        // todo!("Call init functions of button module, EEPROM controller, etc.).");
+        // TODO: Call init function for button module.
 
         Self::init_hib(&mut peripherals.hib, &peripherals.power_control);
 
@@ -117,11 +124,9 @@ impl<'a> Runtime<'a> {
         }
     }
 
-    // TODO: Add methods for returning controllers.
-
     /// Creates a timer from a duration.
     pub fn create_timer(&self, duration: Duration) -> Timer {
-        Timer::new(&self.hib, duration)
+        Timer::new(self.hib, duration)
     }
 
     /// Fills a slice with random bytes from the main CSPRNG.

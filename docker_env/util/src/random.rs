@@ -47,6 +47,8 @@ pub(crate) fn init_rng(peripherals: &mut RuntimePeripherals) {
 
 /// Fills a slice with random bytes from the main CSPRNG.
 ///
+/// # Panics
+///
 /// Panics if the main CSPRNG has not been initialized yet.
 pub(crate) fn fill_rand_slice(dest: &mut [u8]) {
     interrupt::free(|c| {
@@ -61,7 +63,11 @@ pub(crate) fn fill_rand_slice(dest: &mut [u8]) {
 
 /// Fills a slice with random bytes from the secondary CSPRNG.
 ///
-/// DANGER: The seed for this CSPRNG is the same across reboots.
+/// # Danger
+///
+/// The seed for this CSPRNG is the same across reboots.
+///
+/// # Panics
 ///
 /// Panics if the secondary CSPRNG has not been initialized yet.
 pub(crate) fn fill_rand_slice_secondary(dest: &mut [u8]) {

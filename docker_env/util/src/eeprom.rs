@@ -310,7 +310,7 @@ impl<'a> EepromController<'a> {
         while self.eeprom.eedone.read().working().bit_is_set() {}
 
         // Reset peripheral.
-        sysctl::reset(&self.power_control, Domain::Eeprom);
+        sysctl::reset(self.power_control, Domain::Eeprom);
 
         // Wait 6 cycles. See page 539 of the datasheet.
         delay(6);

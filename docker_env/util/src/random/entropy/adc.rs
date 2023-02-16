@@ -70,7 +70,7 @@ impl<T: EntropySource> EntropySource for Adc<T> {
 
         Adc {
             next: T::init(peripherals),
-            samples: samples,
+            samples,
         }
     }
 

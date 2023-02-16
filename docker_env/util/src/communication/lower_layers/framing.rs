@@ -41,7 +41,7 @@ pub trait FramedTxChannel: TxChannel {
 
 impl<T: FramedTxChannel> TxChannel for T {
     fn send(&mut self, src: &mut [u8]) -> Result<(), CommunicationError> {
-        self.frame::<1>(|| Frame::new().append(&src))
+        self.frame::<1>(|| Frame::new().append(src))
     }
 }
 
@@ -49,6 +49,7 @@ impl<T: FramedTxChannel> TxChannel for T {
 /// in a [`FramedTxChannel`]. This can be used to write discontiguous
 /// pieces of memory into one frame. The const generic ``FRAME_SLICES``
 /// indicates the number of slices in the [`Frame`].
+#[derive(Default)]
 pub struct Frame<'a, const FRAME_SLICES: usize> {
     frame_components: heapless::Vec<&'a [u8], FRAME_SLICES>,
     total_len: usize,

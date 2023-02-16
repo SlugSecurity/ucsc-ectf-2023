@@ -139,6 +139,6 @@ impl<T: FramedTxChannel> TxChannel for XChacha20Poly1305TxChannel<T> {
 
         // Write message in following order: Ciphertext + Nonce + Tag
         self.channel
-            .frame::<3>(|| Frame::new().append(&buff)?.append(&nonce)?.append(&tag))
+            .frame::<3>(|| Frame::new().append(buff)?.append(&nonce)?.append(&tag))
     }
 }

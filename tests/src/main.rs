@@ -68,6 +68,8 @@ fn main() -> ! {
     // Insert test module runs above. Use asserts to panic if tests fail.
 
     writeln!(serial_usb, "Tests passed!").unwrap();
+
+    #[allow(clippy::empty_loop)]
     loop {}
 }
 
@@ -103,5 +105,6 @@ fn main() -> ! {
 
     writeln!(serial_usb, "Tests are disabled in release mode!").unwrap();
 
+    #[allow(clippy::empty_loop)]
     loop {}
 }

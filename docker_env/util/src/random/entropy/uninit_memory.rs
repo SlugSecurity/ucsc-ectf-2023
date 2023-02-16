@@ -69,8 +69,7 @@ const fn get_random_bytes_size() -> usize {
         return num;
     }
 
-    assert!(false, "Bad header file. No size present.");
-    unreachable!()
+    panic!("Bad header file. No size present.");
 }
 
 /// The size of the uninitialized memory buffer.
@@ -112,25 +111,25 @@ unsafe extern "aapcs" fn new_rand_callback(uninit_memory: *mut MaybeUninit<c_uch
 
     // Hash the secondary RNG random bytes and the uninitialized memory.
     let mut seed_hasher = Sha3_256::new();
-    seed_hasher.update(&secondary_rng_rand_bytes);
+    seed_hasher.update(secondary_rng_rand_bytes);
     // SAFETY: The use of random_bytes is data-race-free due to the guarantees provided by this
     // function. Since random_bytes is fully initialized and is data-race-free, this use of
     // random_bytes is safe.
-    seed_hasher.update(&random_bytes);
+    seed_hasher.update(random_bytes);
     let seed_hash = seed_hasher.finalize();
 
     // Replace the old uninitialized memory with random bytes.
     let mut uninit_memory_rng = ChaCha20Rng::from_seed(seed_hash.into());
 
     for i in 0..RANDOM_BYTES_SIZE {
-        // SAFETY: The use of offset() is safe because the size of uninit_memory is RANDOM_BYTES_SIZE
-        // or higher, and we are only offsetting by a maximum of RANDOM_BYTES_SIZE - 1. We are offsetting
-        // a pointer to a C unsigned char, which is one byte. Therefore, incrementing the offset by 1 each
-        // iteration is safe.
+        // SAFETY: The use of add() is safe because the size of uninit_memory is RANDOM_BYTES_SIZE
+        // or higher, and we are only adding by a maximum of RANDOM_BYTES_SIZE - 1. We are adding a
+        // byte offset to a C unsigned char pointer. A C unsigned char is one byte. Therefore,
+        // incrementing the byte offset by one each iteration is safe.
         // SAFETY: The use of write_volatile() is safe because the pointer is always valid assuming the
         // uninit_memory pointer + offset is valid.
         uninit_memory
-            .offset(i as isize)
+            .add(i)
             .write_volatile(MaybeUninit::new(uninit_memory_rng.next_u32() as u8));
     }
 }
