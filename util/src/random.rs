@@ -6,7 +6,8 @@
 //! gather entropy.
 //!
 //! The secondary CSPRNG is to be used internally by this crate where the main CSPRNG has not been
-//! initialized yet. Initialization of this CSPRNG does not need to block to gather entropy.
+//! initialized yet. Initialization of this CSPRNG does not need to block to gather entropy. Uses
+//! the same seed across reboots.
 
 mod entropy;
 
@@ -33,9 +34,7 @@ static SECONDARY_CSPRNG: OnceCell<Mutex<RefCell<ChaCha20Rng>>> = OnceCell::new()
 pub(crate) fn init_rng(peripherals: &mut RuntimePeripherals) {
     SECONDARY_CSPRNG.get_or_init(|| {
         Mutex::new(RefCell::new(ChaCha20Rng::from_seed(
-            // We use the secret twice here to make this entropy hash different from the one used to
-            // seed the next piece of "uninitialized" memory.
-            EntropyHasher::<UninitMemory<Secret<Secret<()>>>>::new(peripherals).hash(),
+            EntropyHasher::<Secret<()>>::new(peripherals).hash(),
         )))
     });
 
@@ -61,6 +60,8 @@ pub(crate) fn fill_rand_slice(dest: &mut [u8]) {
 }
 
 /// Fills a slice with random bytes from the secondary CSPRNG.
+///
+/// DANGER: The seed for this CSPRNG is the same across reboots.
 ///
 /// Panics if the secondary CSPRNG has not been initialized yet.
 pub(crate) fn fill_rand_slice_secondary(dest: &mut [u8]) {

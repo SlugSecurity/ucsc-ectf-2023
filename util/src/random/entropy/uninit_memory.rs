@@ -1,4 +1,4 @@
-use crate::RuntimePeripherals;
+use crate::{random::fill_rand_slice_secondary, RuntimePeripherals};
 use core::{ffi::c_uchar, marker::PhantomData, mem::MaybeUninit};
 
 use rand_chacha::{
@@ -105,12 +105,21 @@ extern "aapcs" {
 /// This function can only be run on the same thread that random_bytes is modified on.
 #[no_mangle]
 unsafe extern "aapcs" fn new_rand_callback(uninit_memory: *mut MaybeUninit<c_uchar>) {
+    // Generate random bytes using the secondary RNG.
+    const SECONDARY_RNG_NUM_BYTES: usize = 32;
+    let mut secondary_rng_rand_bytes = [0; SECONDARY_RNG_NUM_BYTES];
+    fill_rand_slice_secondary(&mut secondary_rng_rand_bytes);
+
+    // Hash the secondary RNG random bytes and the uninitialized memory.
     let mut seed_hasher = Sha3_256::new();
+    seed_hasher.update(&secondary_rng_rand_bytes);
     // SAFETY: The use of random_bytes is data-race-free due to the guarantees provided by this
     // function. Since random_bytes is fully initialized and is data-race-free, this use of
     // random_bytes is safe.
     seed_hasher.update(&random_bytes);
     let seed_hash = seed_hasher.finalize();
+
+    // Replace the old uninitialized memory with random bytes.
     let mut uninit_memory_rng = ChaCha20Rng::from_seed(seed_hash.into());
 
     for i in 0..RANDOM_BYTES_SIZE {
