@@ -40,8 +40,7 @@ impl<'a> Timer<'a> {
         Self::get_time_hib(self.hib)
     }
 
-    /// Initializes a timer that expires after a certain duration.
-    pub(crate) fn new(hib: &'a HIB, duration: Duration) -> Self {
+    fn new_impl(hib: &'a HIB, duration: Duration) -> Self {
         let curr_subseconds = Self::time_to_subseconds(Self::get_time_hib(hib));
 
         let duration_secs = duration
@@ -60,8 +59,20 @@ impl<'a> Timer<'a> {
         }
     }
 
+    #[cfg(not(debug_assertions))]
+    /// Initializes a timer that expires after a certain duration.
+    pub fn new(hib: &'a HIB, duration: Duration) -> Self {
+        Self::new_impl(hib, duration)
+    }
+
+    #[cfg(debug_assertions)]
+    /// Initializes a timer that expires after a certain duration.
+    pub fn new(hib: &'a HIB, duration: Duration) -> Self {
+        Self::new_impl(hib, duration)
+    }
+
     /// Polls a timer. Returns whether the timer has expired.
-    pub fn poll(&mut self) -> bool {
+    pub fn poll(&self) -> bool {
         Self::time_to_subseconds(self.get_time()) >= self.end_subseconds
     }
 }

@@ -11,21 +11,24 @@ extern crate tm4c123x_hal;
 extern crate ucsc_ectf_util;
 
 mod eeprom_tests;
+mod timer_tests;
 
 use core::fmt::Write;
 use cortex_m_rt::entry;
 use tm4c123x_hal::{
+    delay::Delay,
     gpio::{GpioExt, AF1},
     serial::Serial,
     sysctl::{CrystalFrequency, Oscillator, PllOutputFrequency, SysctlExt, SystemClock},
     time::Bps,
-    Peripherals,
+    CorePeripherals, Peripherals,
 };
 
 #[cfg(debug_assertions)]
 #[entry]
 fn main() -> ! {
     // Get and initialize peripherals.
+    let core_peripherals = CorePeripherals::take().unwrap();
     let mut peripherals = Peripherals::take().unwrap();
     let mut sysctl = peripherals.SYSCTL.constrain();
 
@@ -57,6 +60,10 @@ fn main() -> ! {
     // Insert test module runs below. Use asserts to panic if tests fail.
 
     eeprom_tests::run(&mut peripherals.EEPROM, &sysctl.power_control);
+    timer_tests::run(
+        &peripherals.HIB,
+        &mut Delay::new(core_peripherals.SYST, &clocks),
+    );
 
     // Insert test module runs above. Use asserts to panic if tests fail.
 
