@@ -183,9 +183,9 @@ dependencies = [
 
 [[package]]
 name = "cortex-m-rt"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6d3328b8b5534f0c90acd66b68950f2763b37e0173cac4d8b4937c4a80761f9"
+checksum = "ee84e813d593101b1723e13ec38b6ab6abbdbaaa4546553f5395ed274079ddb1"
 dependencies = [
  "cortex-m-rt-macros",
 ]
@@ -386,9 +386,9 @@ checksum = "546c37ac5d9e56f55e73b677106873d9d9f5190605e41a856503623648488cae"
 
 [[package]]
 name = "once_cell"
-version = "1.17.0"
+version = "1.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
+checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
 dependencies = [
  "atomic-polyfill 1.0.1",
  "critical-section",
@@ -621,6 +621,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucsc-ectf-eeprom-layout"
+version = "0.1.0"
+
+[[package]]
 name = "ucsc-ectf-fob"
 version = "0.1.0"
 dependencies = [
@@ -636,6 +640,7 @@ dependencies = [
 name = "ucsc-ectf-tests"
 version = "0.1.0"
 dependencies = [
+ "cortex-m 0.7.7",
  "cortex-m-rt",
  "cortex-m-semihosting",
  "panic-semihosting",
@@ -656,6 +661,8 @@ dependencies = [
  "rand_chacha",
  "sha3",
  "tm4c123x-hal",
+ "ucsc-ectf-eeprom-layout",
+ "zeroize",
 ]
 
 [[package]]

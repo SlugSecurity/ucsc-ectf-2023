@@ -1,9 +1,8 @@
 //! This module contains the runtime struct, which is used to perform initialization steps, manage
 //! peripherals, provides random number generation, and manage an interrupt loop.
 
-use crate::{random, Timer};
+use crate::{eeprom::EepromController, random, Timer};
 use core::time::Duration;
-use cortex_m::interrupt;
 use tm4c123x_hal::{
     delay::Delay,
     sysctl::{
@@ -15,6 +14,8 @@ use tm4c123x_hal::{
 
 /// The runtime struct.
 pub struct Runtime<'a> {
+    /// The EEPROM controller.
+    pub eeprom: EepromController<'a>,
     // TODO: Add controllers.
     hib: &'a HIB,
 }
@@ -53,21 +54,19 @@ impl<'a> Runtime<'a> {
     }
 
     /// Initializes the runtime.
-    ///
-    /// There is a very small period of time where the interrupt handlers can run, but not the closure
-    /// passed in `Runtime::start()` due to the ending of the interrupt-free context.
     pub fn new(rt_peripherals: &'a mut RuntimePeripherals) -> Self {
-        interrupt::free(|_| {
-            random::init_rng(rt_peripherals);
-            Self::init_hib(&mut rt_peripherals.hib, &rt_peripherals.power_control);
+        random::init_rng(rt_peripherals);
 
-            todo!(
-                "Call init functions of communication module, button module, EEPROM controller, \
-                etc.)."
-            );
-        });
+        let eeprom =
+            EepromController::new(&mut rt_peripherals.eeprom, &rt_peripherals.power_control)
+                .unwrap();
+
+        // todo!("Call init functions of button module, EEPROM controller, etc.).");
+
+        Self::init_hib(&mut rt_peripherals.hib, &rt_peripherals.power_control);
 
         Runtime {
+            eeprom,
             hib: &rt_peripherals.hib,
         }
     }

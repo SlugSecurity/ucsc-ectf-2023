@@ -15,6 +15,7 @@ extern crate tm4c123x_hal;
 
 // TODO: pub mod button;
 pub mod communication;
+pub mod eeprom;
 pub(crate) mod random;
 pub mod runtime;
 pub mod timer;

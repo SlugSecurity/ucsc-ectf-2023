@@ -16,3 +16,8 @@ chacha20poly1305 = { version = "0.10.1", default-features = false, features = ["
 rand_chacha = { version = "0.3.1", default-features = false }
 once_cell = { version = "1.17.0", default-features = false, features = ["critical-section"] }
 bitvec = { version = "1.0.1", default-features = false }
+zeroize = { version = "1.5.7", default-features = false }
+ucsc-ectf-eeprom-layout = { path = "../eeprom_layout" }
+
+[build-dependencies]
+ucsc-ectf-eeprom-layout = { path = "../eeprom_layout" }

@@ -16,6 +16,8 @@ fn main() {
         .write_all(include_bytes!("memory.x"))
         .unwrap();
 
+    // TODO: Generate the EEPROM file. Add the ucsc-ectf-eeprom-layout src folder to the "rerun if changed".
+
     // Only re-run the build script when this file or memory.x is changed.
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=memory.x");

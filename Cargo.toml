@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "car",
+    "eeprom_layout",
     "fob",
     "util",
     "tests",
