@@ -27,18 +27,18 @@ pub const CAR_ID_SIZE: usize = 4;
 /// The size of the pairing byte.
 pub const PAIRING_BYTE_SIZE: usize = 1;
 
-/// The size of the pairing PIN. 6 hex digits = 3 bytes.
-pub const PAIRING_PIN_SIZE: usize = 3;
+/// The size of the pairing PIN.
+pub const PAIRING_PIN_SIZE: usize = 4;
 
 /// The bounds of the pairing secret EEPROM field.
-const PAIRING_SECRET_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+const PAIRING_PRIVATE_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     address: EEPROM_START_ADDRESS,
     size: SECRET_SIZE,
 };
 
 /// The bounds of the pairing public key signature EEPROM field.
 const PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
-    address: PAIRING_SECRET_BOUNDS.address + PAIRING_SECRET_BOUNDS.size,
+    address: PAIRING_PRIVATE_KEY_BOUNDS.address + PAIRING_PRIVATE_KEY_BOUNDS.size,
     size: SIGNATURE_SIZE,
 };
 
@@ -118,7 +118,7 @@ const UNLOCK_MESSAGE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
 #[derive(Copy, Clone)]
 pub enum EepromReadOnlyField {
     /// The secret of the key used for the Diffie-Hellman key exchange during pairing.
-    PairingSecret,
+    PairingPrivateKey,
     /// The signature of the public key used for the Diffie-Hellman key exchange during pairing.
     PairingPublicKeySignature,
     /// The verifying key used for the Diffie-Hellman key exchange during pairing.
@@ -172,7 +172,7 @@ pub trait EepromReadField: Copy {
 impl EepromReadField for EepromReadOnlyField {
     fn get_field_bounds(&self) -> EepromFieldBounds {
         match self {
-            Self::PairingSecret => PAIRING_SECRET_BOUNDS,
+            Self::PairingPrivateKey => PAIRING_PRIVATE_KEY_BOUNDS,
             Self::PairingPublicKeySignature => PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS,
             Self::PairingVerifyingKey => PAIRING_VERIFYING_KEY_BOUNDS,
             Self::FeatureVerifyingKey => FEATURE_VERIFYING_KEY_BOUNDS,

@@ -1,49 +1,73 @@
-image: archlinux:latest
-
 stages:
   - lint
   - lint-pedantic
   - build
+  - ectf_tools
   - deploy
 
 before_script:
-  - pacman -Sy
-  - pacman -S --noconfirm rustup
-  - rustup default nightly
-  - rustup target add thumbv7em-none-eabihf
-  - rustup component add clippy
-  - pacman -S --noconfirm arm-none-eabi-gcc gcc make git
+  - podman build -f Dockerfile.CI --tag gitlab_runner .
+  - python3 -m venv /tmp/gitlab_runner
+  - source /tmp/gitlab_runner/bin/activate
+  - git clone https://github.com/mitre-cyber-academy/2023-ectf-tools /tmp/ectf_tools || true
+  - pip install -e /tmp/ectf_tools
 
 lint:
   stage: lint
   script:
-    - cargo clippy -- -D warnings
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && cargo clippy -- -D warnings'
   allow_failure: true
+  cache:
+    key: cache
+    paths:
+      - output/cache
 
 lint-pedantic:
   stage: lint-pedantic
   script:
-    - cargo clippy -- -W clippy::pedantic
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && cargo clippy -- -W clippy::pedantic'
   allow_failure: true
+  cache:
+    key: cache
+    paths:
+      - output/cache
 
 build:
   stage: build
   script:
-    - cargo build --release
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && CARGO_HOME=output/cache cargo build --release'
   artifacts:
     paths:
       - target/thumbv7em-none-eabihf/release
+      - target/x86_64-unknown-linux-gnu/release
     expire_in: 1 day
+  cache:
+    key: cache
+    paths:
+      - output/cache
+
+ectf_tools:
+  stage: ectf_tools
+  script:
+    - podman container prune -f || true
+    - podman build -f docker_env/build_image.Dockerfile --tag ectf:ectf --cgroup-manager=cgroupfs docker_env/
+    - ectf_tools build.depl --design . --name ectf --deployment a
+    - ectf_tools build.fob --design . --name ectf --deployment a --fob-name fob1 --fob-out output
+    - ectf_tools build.car_fob_pair --design . --name ectf --deployment a --car-name car --fob-name fob0 --car-out output --fob-out output --car-id 256 --pair-pin cafebe --car-unlock-secret 'unlock' --car-feature1-secret 'feature1' --car-feature2-secret 'feature2' --car-feature3-secret 'feature3'
+  artifacts:
+    paths:
+      - output/*.*
+    expire_in: 1 day
+  cache:
+    key: cache
+    paths:
+      - output/cache/**
 
 pages:
   stage: deploy
   environment: docs
   script:
-    - mkdir public
-    - cargo doc --no-deps --document-private-items
-    - cp -r target/thumbv7em-none-eabihf/doc public/privateapi
-    - cargo doc --no-deps
-    - cp -r target/thumbv7em-none-eabihf/doc public/publicapi
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && mkdir public && cargo doc --no-deps --document-private-items && cp -r target/thumbv7em-none-eabihf/doc public/privateapi && cargo doc --no-deps && cp -r target/thumbv7em-none-eabihf/doc public/publicapi'
   artifacts:
     paths:
       - public

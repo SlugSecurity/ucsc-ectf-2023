@@ -7,7 +7,7 @@ use ucsc_ectf_util::eeprom::{
 };
 
 const READ_ONLY_FIELDS: [EepromReadOnlyField; 9] = [
-    EepromReadOnlyField::PairingSecret,
+    EepromReadOnlyField::PairingPrivateKey,
     EepromReadOnlyField::PairingPublicKeySignature,
     EepromReadOnlyField::PairingVerifyingKey,
     EepromReadOnlyField::FeatureVerifyingKey,

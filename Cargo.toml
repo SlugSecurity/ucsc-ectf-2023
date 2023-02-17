@@ -6,11 +6,13 @@ members = [
     "docker_env/util",
     "tests",
     "finding_friends/friendly_ping",
-    "finding_friends/friendly_pong"
+    "finding_friends/friendly_pong",
+    "host_tools",
 ]
+resolver = "2"
 
 [profile.dev]
-opt-level=1
+opt-level = 1
 
 [profile.release]
 lto = true

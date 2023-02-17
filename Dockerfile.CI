@@ -1,0 +1,8 @@
+FROM archlinux:latest AS base
+RUN pacman -Sy
+RUN pacman -S --noconfirm rustup
+RUN rustup default nightly
+RUN rustup target add thumbv7em-none-eabihf
+RUN rustup component add clippy
+RUN pacman -S --noconfirm arm-none-eabi-gcc gcc make git
+RUN pacman -S --noconfirm docker
