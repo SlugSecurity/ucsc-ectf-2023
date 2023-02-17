@@ -16,13 +16,15 @@ mod timer_tests;
 use core::fmt::Write;
 use cortex_m_rt::entry;
 use tm4c123x_hal::{
-    delay::Delay,
     gpio::{GpioExt, AF1},
     serial::Serial,
     sysctl::{CrystalFrequency, Oscillator, PllOutputFrequency, SysctlExt, SystemClock},
     time::Bps,
-    CorePeripherals, Peripherals,
+    Peripherals,
 };
+
+#[cfg(debug_assertions)]
+use tm4c123x_hal::{delay::Delay, CorePeripherals};
 
 #[cfg(debug_assertions)]
 #[entry]
