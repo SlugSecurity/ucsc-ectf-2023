@@ -2,7 +2,7 @@
 
 use core::iter;
 use tm4c123x_hal::{sysctl::PowerControl, tm4c123x::EEPROM};
-use ucsc_ectf_util::eeprom::{
+use ucsc_ectf_util_no_std::eeprom::{
     EepromController, EepromReadField, EepromReadOnlyField, EepromReadWriteField, PUBLIC_KEY_SIZE,
 };
 

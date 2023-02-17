@@ -1,6 +1,6 @@
 cargo-features = ["per-package-target"]
 [package]
-name = "ucsc-ectf-util"
+name = "ucsc-ectf-util-no-std"
 version = "0.1.0"
 edition = "2021"
 authors = ["2023 UCSC eCTF Team"]
@@ -16,22 +16,17 @@ strip = true
 
 [dependencies]
 cortex-m = "0.7.7"
-cortex-m-rt = "0.7.2"
 cortex-m-semihosting = "0.5.0"
 tm4c123x-hal = { version = "0.10.2", features = ["rt"] }
-sha3 = { version = "0.10.6", default-features = false }
+ucsc-ectf-eeprom-layout = { path = "../eeprom_layout" }
 chacha20poly1305 = { version = "0.10.1", default-features = false, features = ["heapless"] }
+sha3 = { version = "0.10.6", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
 once_cell = { version = "1.17.0", default-features = false, features = ["critical-section"] }
 bitvec = { version = "1.0.1", default-features = false }
 zeroize = { version = "1.5.7", default-features = false }
-ucsc-ectf-eeprom-layout = { path = "../eeprom_layout" }
-generic-array = "0.14"
-typenum = "1.16"
+ucsc-ectf-util-common = { path = "../util_common" }
 hex = {version = "0.4", default-features = false }
-
-[build-dependencies]
-ucsc-ectf-eeprom-layout = { path = "../eeprom_layout" }
 
 # Make sure tm4c123x and tm4c123x-hal use the latest cortex-m and cortex-m-rt crates to fix UB.
 

@@ -3,10 +3,14 @@ members = [
     "car",
     "docker_env/eeprom_layout",
     "fob",
-    "docker_env/util",
+    "docker_env/util_common",
+    "docker_env/util_no_std",
     "tests",
     "finding_friends/friendly_ping",
     "finding_friends/friendly_pong",
+]
+exclude = [
+    "docker_env/util_std",
     "host_tools",
 ]
 resolver = "2"

@@ -1,22 +1,15 @@
-use core::time::Duration;
-
+use super::{KeyedChannel, RandomSource};
+use crate::communication::{
+    self,
+    lower_layers::framing::{Frame, FramedTxChannel},
+    CommunicationError, RxChannel, TxChannel,
+};
 use chacha20poly1305::{AeadCore, AeadInPlace, KeyInit, XChaCha20Poly1305};
+use core::time::Duration;
 use generic_array::GenericArray;
-
 use typenum::Unsigned;
 
-use crate::{
-    communication::{
-        self,
-        lower_layers::framing::{Frame, FramedTxChannel},
-        CommunicationError, RxChannel, TxChannel,
-    },
-    random::fill_rand_slice,
-};
-
 pub use chacha20poly1305::Key;
-
-use super::KeyedChannel;
 
 /// This typedef can be used to change what algorithm the channel in this module uses.
 type ChannelAlgorithm = XChaCha20Poly1305;
@@ -97,26 +90,28 @@ impl<T: RxChannel> RxChannel for XChacha20Poly1305RxChannel<T> {
 }
 
 /// This [`TxChannel`] wraps around a [`FramedTxChannel`] to encrypt communications encrypted by a [`XChacha20Poly1305TxChannel`],
-/// providing message authenticity and confidentiality.
+/// providing message authenticity and confidentiality. This channel requires a [`RandomSource`] to generate a random nonce.
 ///
 /// See the module-level documentation for more information on the cipher used.
-pub struct XChacha20Poly1305TxChannel<T: FramedTxChannel> {
+pub struct XChacha20Poly1305TxChannel<T: FramedTxChannel, U: RandomSource> {
     channel: T,
+    random_source: U,
     encryptor: ChannelAlgorithm,
 }
 
-impl<T: FramedTxChannel> XChacha20Poly1305TxChannel<T> {
+impl<T: FramedTxChannel, U: RandomSource> XChacha20Poly1305TxChannel<T, U> {
     /// Creates a new [`XChacha20Poly1305TxChannel`] given an inner [`FramedTxChannel`] and an
     /// encryption [`Key`].
-    pub fn new(channel: T, tx_key: &Key) -> Self {
+    pub fn new(channel: T, random_source: U, tx_key: &Key) -> Self {
         Self {
             channel,
+            random_source,
             encryptor: ChannelAlgorithm::new(tx_key),
         }
     }
 }
 
-impl<T: FramedTxChannel> KeyedChannel for XChacha20Poly1305TxChannel<T> {
+impl<T: FramedTxChannel, U: RandomSource> KeyedChannel for XChacha20Poly1305TxChannel<T, U> {
     type KeyType = Key;
 
     fn change_key(&mut self, new_key: &Self::KeyType) {
@@ -124,12 +119,12 @@ impl<T: FramedTxChannel> KeyedChannel for XChacha20Poly1305TxChannel<T> {
     }
 }
 
-impl<T: FramedTxChannel> TxChannel for XChacha20Poly1305TxChannel<T> {
+impl<T: FramedTxChannel, U: RandomSource> TxChannel for XChacha20Poly1305TxChannel<T, U> {
     fn send(&mut self, buff: &mut [u8]) -> communication::Result<()> {
         let mut nonce: GenericArray<u8, NonceSize> = Default::default();
 
         // Fill nonce with random bytes.
-        fill_rand_slice(&mut nonce);
+        self.random_source.fill_rand_slice(&mut nonce);
 
         // Encrypt buff completely in place with no associated data, returning the auth tag.
         let tag = self

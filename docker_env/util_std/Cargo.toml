@@ -1,5 +1,5 @@
 [package]
-name = "host_tools"
+name = "ucsc-ectf-util-std"
 version = "0.1.0"
 edition = "2021"
 authors = ["2023 UCSC eCTF Team"]
@@ -14,4 +14,4 @@ strip = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ucsc-ectf-util-std = { path = "../docker_env/util_std" }
+ucsc-ectf-util-common = { path = "../util_common" }

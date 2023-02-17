@@ -3,7 +3,7 @@
 use core::time::Duration;
 use cortex_m::prelude::_embedded_hal_blocking_delay_DelayMs;
 use tm4c123x_hal::{delay::Delay, tm4c123x::HIB};
-use ucsc_ectf_util::Timer;
+use ucsc_ectf_util_no_std::Timer;
 
 pub fn run(hib: &HIB, delay: &mut Delay) {
     too_slow_ms_test(hib, delay);

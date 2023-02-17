@@ -1,24 +1,34 @@
 use core::time::Duration;
 
+use super::{
+    lower_layers::crypto::{KeyedChannel, XChacha20Poly1305RxChannel, XChacha20Poly1305TxChannel},
+    uart::{FramedUartRxChannel, FramedUartTxChannel},
+    RxChannel, TxChannel,
+};
+use crate::random::fill_rand_slice;
 use chacha20poly1305::Key;
 use tm4c123x_hal::{
     serial::{Rx, RxPin, Tx, TxPin},
     tm4c123x::{UART0, UART1},
 };
-
-use super::{
-    lower_layers::{
-        crypto::{KeyedChannel, XChacha20Poly1305RxChannel, XChacha20Poly1305TxChannel},
-        framing::{FramedUartRxChannel, FramedUartTxChannel},
-    },
-    RxChannel, TxChannel,
-};
+use ucsc_ectf_util_common::communication::lower_layers::crypto::RandomSource;
 
 type EncryptedUartTxChannel<'a, UART, TX> =
-    XChacha20Poly1305TxChannel<FramedUartTxChannel<'a, UART, TX>>;
+    XChacha20Poly1305TxChannel<FramedUartTxChannel<'a, UART, TX>, UartRandomSource>;
 
 type EncryptedUartRxChannel<'a, UART, RX> =
     XChacha20Poly1305RxChannel<FramedUartRxChannel<'a, UART, RX>>;
+
+/// The [`RandomSource`] used for encrypted UART channels.
+pub struct UartRandomSource {
+    _not_constructible: (), // Makes this not publicly constructible.
+}
+
+impl RandomSource for UartRandomSource {
+    fn fill_rand_slice<T: AsMut<[u8]>>(&mut self, mut slice_ref: T) {
+        fill_rand_slice(slice_ref.as_mut());
+    }
+}
 
 macro_rules! uart_impl {
     ($ctr_ty:ident, $uart_typ:ty, $fn_name:ident,$keyless_fn_name:ident, $tx_ctor:ident, $rx_ctor:ident) => {
@@ -32,6 +42,12 @@ macro_rules! uart_impl {
         /// [`XChacha20Poly1305RxChannel`] and [`XChacha20Poly1305TxChannel`]
         /// for how message confidentiality and integrity is guaranteed for transmissions
         /// in this struct.
+        ///
+        /// To frame the UART data sent and received, BogoFraming is used.
+        ///
+        /// ## BogoFraming
+        /// Each message sent/received will be hex encoded and decoded, delimited by a NULL (\0) character
+        /// at the start and at the end. Messages must be at least 1 character long.
         pub struct $ctr_ty<'a, TX, RX>
         where
             TX: TxPin<$uart_typ>,
@@ -56,8 +72,13 @@ macro_rules! uart_impl {
                 rx_key: &Key,
                 tx_key: &Key,
             ) -> Self {
-                let tx_channel =
-                    EncryptedUartTxChannel::new(FramedUartTxChannel::$tx_ctor(tx), tx_key);
+                let tx_channel = EncryptedUartTxChannel::new(
+                    FramedUartTxChannel::$tx_ctor(tx),
+                    UartRandomSource {
+                        _not_constructible: (),
+                    },
+                    tx_key,
+                );
                 let rx_channel =
                     EncryptedUartRxChannel::new(FramedUartRxChannel::$rx_ctor(rx), rx_key);
 

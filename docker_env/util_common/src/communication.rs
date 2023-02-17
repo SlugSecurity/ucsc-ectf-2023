@@ -1,9 +1,25 @@
+//! This module contains traits to implement the BogoStack and error structs.
+//!
+//! ## BogoStack
+//!
+//! The BogoStack consists of three layers.
+//! - The framing layer
+//!     - The framing layer is responsible for turning a stream of data into frames. See the
+//!       [`framing`](lower_layers::framing) module for the traits and structs provided to
+//!       facilitate the implementation of this layer.
+//! - The encryption and integrity layer
+//!     - This layer is responsible for providing secure and authenticated methods of transportation.
+//!       Implementations of this part of the BogoStack are provided in the [`crypto`](lower_layers::crypto)
+//!       module. See that module for more detail on the traits and structs provided for this layer.
+//! - The application layer
+//!     - The application layer is the layer responsible for incorporating the lower two layers together.
+//!       There are no implementations provided on this layer, but one can easily put together types consisting
+//!       of a secure channel primitive with a framing layer primitive to create a channel that conforms to the
+//!       BogoStack.
+
 use core::time::Duration;
 
 pub mod lower_layers;
-mod secure_uart;
-
-pub use secure_uart::*;
 
 /// Type definition for any [`CommunicationError`] [`Results`](core::result::Result).
 pub type Result<T> = core::result::Result<T, CommunicationError>;

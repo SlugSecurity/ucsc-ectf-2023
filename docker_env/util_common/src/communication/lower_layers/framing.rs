@@ -4,20 +4,10 @@
 //! [`FramedTxChannels`](FramedTxChannel) differ from [`TxChannels`](TxChannel) in that they require
 //! framing while [`TxChannels`](TxChannel) do not necessarily require any concept of framing.
 //!
-//! # Current framing protocol implementations:
-//! ## BogoFraming
-//! Each message sent/received will be hex encoded and decoded, delimited by a NULL (\0) character
-//! at the start and at the end. Messages must be at least 1 character long.  This framing protocol
-//! implementation is used in  [`FramedUartRxChannels`](FramedUartRxChannel) and
-//! [`FramedUartTxChannels`](FramedUartTxChannel).
-//!
-//! See the documentation for [`communication`](crate::communication) for a description of the BogoStack
-//! and more info on the other layers of the BogoStack.
-
-mod uart;
+//! See the documentation for [`communication`](crate::communication) for a description of full communication
+//! stack.
 
 use chacha20poly1305::aead::heapless;
-pub use uart::*;
 
 use crate::communication::{CommunicationError, TxChannel};
 
@@ -55,6 +45,15 @@ pub struct Frame<'a, const FRAME_SLICES: usize> {
     total_len: usize,
 }
 
+impl<'a, const FRAME_SLICES: usize> IntoIterator for Frame<'a, FRAME_SLICES> {
+    type Item = &'a [u8];
+    type IntoIter = <heapless::Vec<&'a [u8], FRAME_SLICES> as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.frame_components.into_iter()
+    }
+}
+
 impl<'a, const FRAME_CT: usize> Frame<'a, FRAME_CT> {
     /// Instantiates a new [`Frame`]. See the struct documentation for
     /// more information.
@@ -80,5 +79,15 @@ impl<'a, const FRAME_CT: usize> Frame<'a, FRAME_CT> {
             }
             Err(_) => Err(CommunicationError::InternalError),
         }
+    }
+
+    /// Gets the length of the frame in bytes.
+    pub fn len(&self) -> usize {
+        self.total_len
+    }
+
+    /// Checks if the [`Frame`] is empty.
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 }

@@ -6,9 +6,11 @@ use tm4c123x_hal::{
     tm4c123x::{uart0, UART0, UART1},
 };
 
-use crate::communication::{self, CommunicationError, RxChannel};
-
-use super::{Frame, FramedTxChannel};
+use crate::communication::{
+    self,
+    lower_layers::framing::{Frame, FramedTxChannel},
+    CommunicationError, RxChannel,
+};
 
 const UART_FIFO_LEN: usize = 16;
 
@@ -99,7 +101,7 @@ where
 
         let frame = frame()?;
 
-        if frame.total_len < MIN_FRAMED_UART_MESSAGE {
+        if frame.len() < MIN_FRAMED_UART_MESSAGE {
             return Err(CommunicationError::SendError);
         }
 
@@ -107,7 +109,7 @@ where
 
         write_fn(self, b"\0");
 
-        for frame_piece in frame.frame_components {
+        for frame_piece in frame {
             for chunk in frame_piece.chunks(HEX_ARRAY_LEN / 2) {
                 // This should never panic because the chunks should always fit in our hex array.
                 hex::encode_to_slice(chunk, &mut hex_array).unwrap();

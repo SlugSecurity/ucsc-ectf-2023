@@ -8,7 +8,6 @@ extern crate cortex_m_rt;
 extern crate cortex_m_semihosting;
 extern crate panic_semihosting;
 extern crate tm4c123x_hal;
-extern crate ucsc_ectf_util;
 
 mod eeprom_tests;
 mod timer_tests;
