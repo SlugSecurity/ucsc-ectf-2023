@@ -19,3 +19,5 @@ chacha20poly1305 = { version = "0.10.1", default-features = false, features = ["
 generic-array = "0.14"
 typenum = "1.16"
 hex = {version = "0.4", default-features = false }
+serde = { version = "1.0.152", default-features = false }
+serde_repr = { version = "0.1.10", default-features = false }

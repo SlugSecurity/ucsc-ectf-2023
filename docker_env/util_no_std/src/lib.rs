@@ -5,6 +5,7 @@
 
 pub mod communication;
 pub mod eeprom;
+pub mod hib;
 pub mod runtime;
 pub mod timer;
 

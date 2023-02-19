@@ -15,7 +15,8 @@ debug = false
 strip = true
 
 [dependencies]
-cortex-m = "0.7.7"
+cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7.2"
 cortex-m-semihosting = "0.5.0"
 tm4c123x-hal = { version = "0.10.2", features = ["rt"] }
 ucsc-ectf-eeprom-layout = { path = "../eeprom_layout" }

@@ -201,6 +201,7 @@ checksum = "8ec610d8f49840a5b376c69663b6369e71f4b34484b9b2eb29fb918d92516cb9"
 dependencies = [
  "bare-metal",
  "bitfield",
+ "critical-section",
  "embedded-hal",
  "volatile-register",
 ]
@@ -743,6 +744,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_repr"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9a5ec9fa74a20ebbe5d9ac23dac1fc96ba0ecfe9f50f2843b52e537b10fbcb4e"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "serdect"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -877,6 +889,7 @@ checksum = "497961ef93d974e23eb6f433eb5fe1b7930b659f06d12dec6fc44a8f554c0bba"
 name = "ucsc-ectf-car"
 version = "0.1.0"
 dependencies = [
+ "cortex-m 0.7.7",
  "cortex-m-rt",
  "cortex-m-semihosting",
  "ecdsa",
@@ -884,9 +897,11 @@ dependencies = [
  "panic-halt",
  "panic-semihosting",
  "postcard",
+ "serde",
  "tm4c123x-hal",
  "ucsc-ectf-eeprom-layout",
  "ucsc-ectf-util-no-std",
+ "zeroize",
 ]
 
 [[package]]
@@ -897,6 +912,7 @@ version = "0.1.0"
 name = "ucsc-ectf-fob"
 version = "0.1.0"
 dependencies = [
+ "cortex-m 0.7.7",
  "cortex-m-rt",
  "cortex-m-semihosting",
  "ecdsa",
@@ -905,9 +921,11 @@ dependencies = [
  "panic-halt",
  "panic-semihosting",
  "postcard",
+ "serde",
  "tm4c123x-hal",
  "ucsc-ectf-eeprom-layout",
  "ucsc-ectf-util-no-std",
+ "zeroize",
 ]
 
 [[package]]
@@ -929,6 +947,8 @@ dependencies = [
  "chacha20poly1305",
  "generic-array 0.14.6",
  "hex",
+ "serde",
+ "serde_repr",
  "typenum",
 ]
 
@@ -939,6 +959,7 @@ dependencies = [
  "bitvec",
  "chacha20poly1305",
  "cortex-m 0.7.7",
+ "cortex-m-rt",
  "cortex-m-semihosting",
  "hex",
  "once_cell",

@@ -1,5 +1,7 @@
 //! This module is responsible for parsing the message types in messages.
 
+use serde_repr::{Deserialize_repr, Serialize_repr};
+
 /// The UARTs that the car and key fob can send/receive messages on.
 #[derive(Copy, Clone)]
 pub enum UartType {
@@ -38,7 +40,8 @@ impl UartType {
 }
 
 /// The type of message.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize_repr, Deserialize_repr)]
+#[repr(u8)]
 pub enum MessageType {
     /// Unlock request from car to key fob.
     UnlockRequest,

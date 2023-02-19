@@ -65,7 +65,7 @@ impl<'a> HibTimer<'a> {
 
     #[cfg(not(debug_assertions))]
     /// Initializes a timer that expires after a certain duration.
-    pub fn new(hib: &'a HIB, duration: Duration) -> Self {
+    pub(crate) fn new(hib: &'a HIB, duration: Duration) -> Self {
         Self::new_impl(hib, duration)
     }
 

@@ -4,11 +4,10 @@
 use crate::{
     communication::{Uart0Controller, Uart1Controller},
     eeprom::EepromController,
+    hib::HibController,
     random,
-    timer::HibTimer,
 };
 use chacha20poly1305::Key;
-use core::time::Duration;
 use tm4c123x_hal::{
     delay::Delay,
     gpio::{
@@ -17,8 +16,8 @@ use tm4c123x_hal::{
     },
     serial::{NewlineMode, Rx, RxPin, Serial, Tx, TxPin},
     sysctl::{
-        self, Clocks, CrystalFrequency, Domain, Oscillator, PllOutputFrequency, PowerControl,
-        PowerState, RunMode, Sysctl, SysctlExt, SystemClock,
+        Clocks, CrystalFrequency, Oscillator, PllOutputFrequency, PowerControl, Sysctl, SysctlExt,
+        SystemClock,
     },
     time::Bps,
     tm4c123x::*,
@@ -36,51 +35,20 @@ type Uart1RxPin = PB0<AlternateFunction<AF1, PushPull>>;
 /// The runtime struct.
 pub struct Runtime<'a> {
     /// The EEPROM controller.
-    pub eeprom: EepromController<'a>,
+    pub eeprom_controller: EepromController<'a>,
+
+    // TODO: Add button controller.
+    /// The hibernation controller.
+    pub hib_controller: HibController<'a>,
 
     /// The controller for UART0. See the documentation for [`Uart0Controller`] for more details.
     pub uart0_controller: Uart0Controller<'a, (), ()>,
 
     /// The controller for UART1. See the documentation for [`Uart1Controller`] for more details.
     pub uart1_controller: Uart1Controller<'a, Uart1TxPin, Uart1RxPin>,
-
-    // TODO: Add controllers.
-    hib: &'a HIB,
 }
 
 impl<'a> Runtime<'a> {
-    /// Initializes the hibernation peripheral.
-    fn init_hib(hib: &mut HIB, power_control: &PowerControl) {
-        // Enable hibernation module. This is enabled by default, but we enable it here just in case.
-        sysctl::control_power(
-            power_control,
-            Domain::Hibernation,
-            RunMode::Run,
-            PowerState::On,
-        );
-
-        // Reset hibernation module for good measure.
-        sysctl::reset(power_control, Domain::Hibernation);
-
-        // Initialize hibernation clock.
-        hib.ctl.write(|w| {
-            // Use low-frequency oscillator and enable clock.
-            w.oscbyp().clear_bit().clk32en().set_bit()
-        });
-
-        // Wait for hibernation module to be ready.
-        while hib.ctl.read().wrc().bit_is_clear() {}
-
-        // Enable RTC.
-        // SAFETY: Writing to this register is safe because it is data-race free. This guarantee
-        // comes from the fact that the hibernation peripheral is borrowed mutably.
-        hib.ctl
-            .modify(|r, w| unsafe { w.bits(r.bits()).rtcen().set_bit() });
-
-        // Wait for hibernation module to be ready.
-        while hib.ctl.read().wrc().bit_is_clear() {}
-    }
-
     /// Initializes the runtime.
     ///
     /// # Panics
@@ -93,12 +61,12 @@ impl<'a> Runtime<'a> {
     ) -> Self {
         random::init_rng(peripherals);
 
-        let eeprom =
+        let eeprom_controller =
             EepromController::new(&mut peripherals.eeprom, &peripherals.power_control).unwrap();
 
-        // TODO: Call init function for button module.
+        // TODO: Initialize button controller.
 
-        Self::init_hib(&mut peripherals.hib, &peripherals.power_control);
+        let hib_controller = HibController::new(&mut peripherals.hib, &peripherals.power_control);
 
         let uart0_controller =
             Uart0Controller::without_key(&mut peripherals.uart0_tx, &mut peripherals.uart0_rx);
@@ -111,23 +79,11 @@ impl<'a> Runtime<'a> {
         );
 
         Runtime {
-            eeprom,
-            hib: &peripherals.hib,
+            eeprom_controller,
+            hib_controller,
             uart0_controller,
             uart1_controller,
         }
-    }
-
-    /// Runs the event loop.
-    pub fn start(&mut self, mut to_run: impl FnMut(&mut Self)) -> ! {
-        loop {
-            to_run(self);
-        }
-    }
-
-    /// Creates a timer from a duration.
-    pub fn create_timer(&self, duration: Duration) -> HibTimer {
-        HibTimer::new(self.hib, duration)
     }
 
     /// Fills a slice with random bytes from the main CSPRNG.
