@@ -4,8 +4,8 @@
 let PID = (bash -c 'echo -n $PPID')
 let TARGET_DIR = (cargo metadata --format-version 1 | from json | get target_directory)
 let TARGET_TRIPLE = "thumbv7em-none-eabihf"
-let BIN_LOCATION = $"($TARGET_DIR)/($TARGET_TRIPLE)/debug"
-let PROGRAM_CMD = { |usb bin| $"openocd -d0 -f board/ti_ek-tm4c123gxl.cfg -c 'tcl_port disabled' -c 'telnet_port disabled' -c 'gdb_port disabled' -c 'adapter usb location ($usb)' -c 'init' -c 'program ($BIN_LOCATION)/($bin) reset exit'" }
+let BIN_LOCATION = $"($TARGET_DIR)/($TARGET_TRIPLE)/release"
+let PROGRAM_CMD = { |usb bin| $"openocd -d0 -f board/ti_ek-tm4c123gxl.cfg -c 'tcl_port disabled' -c 'telnet_port disabled' -c 'gdb_port disabled' -c 'adapter usb location ($usb)' -c 'init' -c 'reset halt' -c 'load_image ($BIN_LOCATION)/($bin)' -c 'resume 0x2000026c' -c 'exit'" }
 
 if "BOARDS" in $env {
     print "You already have a lock on a pair of boards! Try again in another terminal if you really need more boards."
@@ -40,18 +40,24 @@ print "Pong Board"
 print $pong_board
 
 # Flash pong board.
-cargo build --bin friendly_pong err> /dev/null
+print "Flashing pong board."
+cargo build -r --bin friendly_pong err> /dev/null
 do -i { sh -c (do $PROGRAM_CMD $pong_board.bus_port friendly_pong) err> /dev/null } 
 
 # Flash ping boards, loading each with a different BUS_PORT value.
+print "Flashing ping boards."
 $ping_boards | each { |i|
     let-env BUS_PORT = ($i.bus_port);
-    cargo build --bin friendly_ping err> /dev/null;
+    cargo build -r --bin friendly_ping err> /dev/null;
     do -i { sh -c (do $PROGRAM_CMD $i.bus_port friendly_ping) err> /dev/null };
     sleep 50ms
 }
 
 # Finding friends!
+print "Finding friends!"
+
+# Fix the TTY because you slobs can't clean up after yourselves.
+stty -F $pong_board.tty 115200
 let bp = (head -n 5 $pong_board.tty | str trim | split row "\n" | get 2)
 let friend = try {
     $boards | where { |i| $bp == $i.bus_port } | first
