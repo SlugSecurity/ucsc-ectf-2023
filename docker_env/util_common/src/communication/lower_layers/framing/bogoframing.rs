@@ -10,7 +10,7 @@
 use super::Frame;
 use crate::communication::{self, CommunicationError, Timer};
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 enum TimeoutType {
     ByteLevel,
     FrameLevel,
@@ -35,17 +35,27 @@ fn recv_bogoframe<T, U: Timer>(
         timer: &mut U,
         timeout_type: TimeoutType,
     ) -> communication::Result<Option<u8>> {
-        loop {
-            match read_fn(read_fn_arg) {
-                Ok(b'\0') => return Ok(None),
-                Ok(read @ b'0'..=b'9') => return Ok(Some(read - b'0')),
-                Ok(read @ b'a'..=b'f') => return Ok(Some(read - b'a' + 10)),
-                Ok(_) => return Err(CommunicationError::RecvError),
-                Err(_) => (),
+        let nibble = loop {
+            if let Ok(read) = read_fn(read_fn_arg) {
+                break match read {
+                    b'\0' => Ok(None),
+                    b'0'..=b'9' => Ok(Some(read - b'0')),
+                    b'a'..=b'f' => Ok(Some(read - b'a' + 10)),
+                    _ => Err(CommunicationError::RecvError),
+                };
             }
 
-            // TODO: check timeout based on timeout_type
+            if timer.poll() {
+                break Err(CommunicationError::RecvError);
+            }
+        };
+
+        // Reset the timer if the timeout is per byte.
+        if timeout_type == TimeoutType::ByteLevel {
+            timer.reset();
         }
+
+        nibble
     }
 
     if dest.len() < min_message_len {
@@ -54,8 +64,21 @@ fn recv_bogoframe<T, U: Timer>(
 
     // First, read and discard data until a NULL character is found because any data that's not NULL
     // is garbage, keeping the timeout in mind.
-    while let Ok(1..) | Err(_) = read_fn(read_arg) {
-        // TODO: check timeout based on timeout_type
+    loop {
+        if timer.poll() {
+            return Err(CommunicationError::RecvError);
+        }
+
+        if let Ok(n) = read_fn(read_arg) {
+            // Reset the timer if the timeout is per byte.
+            if timeout_type == TimeoutType::ByteLevel {
+                timer.reset();
+            }
+
+            if n == b'\0' {
+                break;
+            }
+        }
     }
 
     // Once a NULL is found, keep reading until we find a non-NULL character to indicate the start of
