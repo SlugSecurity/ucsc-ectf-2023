@@ -3,6 +3,7 @@
 #![warn(missing_docs)]
 #![no_std]
 
+pub mod button;
 pub mod communication;
 pub mod eeprom;
 pub mod hib;

@@ -2,6 +2,7 @@
 //! peripherals, provides random number generation, and manage an interrupt loop.
 
 use crate::{
+    button::Sw1ButtonController,
     communication::{Uart0Controller, Uart1Controller},
     eeprom::EepromController,
     hib::HibController,
@@ -12,7 +13,8 @@ use tm4c123x_hal::{
     delay::Delay,
     gpio::{
         gpiob::{PB0, PB1},
-        AlternateFunction, GpioExt, PullUp, PushPull, AF1,
+        gpiof::PF4,
+        AlternateFunction, GpioExt, Input, PullUp, PushPull, AF1,
     },
     serial::{NewlineMode, Rx, RxPin, Serial, Tx, TxPin},
     sysctl::{
@@ -37,9 +39,11 @@ pub struct Runtime<'a> {
     /// The EEPROM controller.
     pub eeprom_controller: EepromController<'a>,
 
-    // TODO: Add button controller.
     /// The hibernation controller.
     pub hib_controller: HibController<'a>,
+
+    /// The SW1 button controller.
+    pub sw1_button_controller: Sw1ButtonController<'a>,
 
     /// The controller for UART0. See the documentation for [`Uart0Controller`] for more details.
     pub uart0_controller: Uart0Controller<'a, (), ()>,
@@ -64,9 +68,10 @@ impl<'a> Runtime<'a> {
         let eeprom_controller =
             EepromController::new(&mut peripherals.eeprom, &peripherals.power_control).unwrap();
 
-        // TODO: Initialize button controller.
-
         let hib_controller = HibController::new(&mut peripherals.hib, &peripherals.power_control);
+
+        let sw1_button_controller =
+            Sw1ButtonController::new(&mut peripherals.pf4, &mut peripherals.nvic);
 
         let uart0_controller =
             Uart0Controller::without_key(&mut peripherals.uart0_tx, &mut peripherals.uart0_rx);
@@ -81,6 +86,7 @@ impl<'a> Runtime<'a> {
         Runtime {
             eeprom_controller,
             hib_controller,
+            sw1_button_controller,
             uart0_controller,
             uart1_controller,
         }
@@ -170,7 +176,7 @@ pub struct RuntimePeripherals {
     pub i2c2: I2C2,
     pub i2c3: I2C3,
     pub gpio_porte: GPIO_PORTE,
-    pub gpio_portf: GPIO_PORTF,
+    pub pf4: PF4<Input<PullUp>>,
     pub pwm0: PWM0,
     pub pwm1: PWM1,
     pub qei0: QEI0,
@@ -259,7 +265,11 @@ impl From<(CorePeripherals, Peripherals)> for RuntimePeripherals {
             i2c2: peripherals.I2C2,
             i2c3: peripherals.I2C3,
             gpio_porte: peripherals.GPIO_PORTE,
-            gpio_portf: peripherals.GPIO_PORTF,
+            pf4: peripherals
+                .GPIO_PORTF
+                .split(&sysctl.0)
+                .pf4
+                .into_pull_up_input(),
             pwm0: peripherals.PWM0,
             pwm1: peripherals.PWM1,
             qei0: peripherals.QEI0,
