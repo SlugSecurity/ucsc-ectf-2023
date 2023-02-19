@@ -4,8 +4,17 @@
 //! [`FramedTxChannels`](FramedTxChannel) differ from [`TxChannels`](TxChannel) in that they require
 //! framing while [`TxChannels`](TxChannel) do not necessarily require any concept of framing.
 //!
+//! ## Framing protocols
+//! - BogoFraming
+//!     - BogoFraming is a very simple framing protocol. Each message begins and ends with one NULL character.
+//!     - To prevent conflating NULL characters with the underlying data, the underlying data is hex encoded
+//!       and decoded.
+//!     - Helper functions to implement channels using this type of framing are in the [`bogoframing`] module.
+//!
 //! See the documentation for [`communication`](crate::communication) for a description of full communication
 //! stack.
+
+pub mod bogoframing;
 
 use chacha20poly1305::aead::heapless;
 

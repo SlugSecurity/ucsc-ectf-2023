@@ -4,9 +4,9 @@
 //!
 //! The BogoStack consists of three layers.
 //! - The framing layer
-//!     - The framing layer is responsible for turning a stream of data into frames. See the
-//!       [`framing`](lower_layers::framing) module for the traits and structs provided to
-//!       facilitate the implementation of this layer.
+//!     - The framing layer is responsible for turning a stream of data into frames. The BogoStack uses BogoFraming.
+//!       See the [`framing`](lower_layers::framing) module for the traits and structs provided to facilitate the
+//!       implementation of this layer.
 //! - The encryption and integrity layer
 //!     - This layer is responsible for providing secure and authenticated methods of transportation.
 //!       Implementations of this part of the BogoStack are provided in the [`crypto`](lower_layers::crypto)
@@ -17,7 +17,7 @@
 //!       of a secure channel primitive with a framing layer primitive to create a channel that conforms to the
 //!       BogoStack.
 
-use core::time::Duration;
+use crate::timer::Timer;
 
 pub mod lower_layers;
 
@@ -29,9 +29,9 @@ pub type Result<T> = core::result::Result<T, CommunicationError>;
 pub trait RxChannel {
     /// Receives data from the channel, putting the data received into ``dest``, returning the
     /// number of bytes written to it upon success. The buffer provided should have enough
-    /// space to store the data that needs to be received along with its metadata size. After
-    /// the timeout has passed, this function returns an error. Upon an error, a [`CommunicationError`]
-    /// is given.
+    /// space to store the data that needs to be received along with its metadata size. The provided timeout
+    /// is reset on each byte received. If the timeout has passed and not enough bytes have been received, this
+    /// function returns an error. Upon an error, a [`CommunicationError`] is given.
     ///
     /// # ERRORS:
     ///
@@ -50,7 +50,33 @@ pub trait RxChannel {
     ///  - [`CommunicationError::InternalError`]
     ///    - This can occur if some internal error happens. This should only occur if something is wrong
     ///      with the implementation.
-    fn recv(&mut self, dest: &mut [u8], timeout: Duration) -> Result<usize>;
+    fn recv_with_data_timeout<T: Timer>(&mut self, dest: &mut [u8], timer: &mut T)
+        -> Result<usize>;
+
+    /// Receives data from the channel, putting the data received into ``dest``, returning the
+    /// number of bytes written to it upon success. The buffer provided should have enough
+    /// space to store the data that needs to be received along with its metadata size. The provided time to
+    /// block is for the entire receive operation. If the timeout has passed and not enough bytes have been received,
+    /// this function returns an error. Upon an error, a [`CommunicationError`] is given.
+    ///
+    /// # ERRORS:
+    ///
+    /// - [`CommunicationError::RecvError`] - There are a couple of cases when this can occur:
+    ///   - If this is a channel receiving communications from a
+    ///     [`FramedTxChannel`](lower_layers::framing::FramedTxChannel), then this error could occur
+    ///     if the provided buffer is too small to fit a whole message sent in a frame or if a malformed
+    ///     message was sent.
+    ///   - The timeout is reached.
+    ///   - If this is a channel receiving communications from a channel in the crypto layer, such
+    ///     as from an [`XChachaPoly1305Channel`](lower_layers::crypto::XChacha20Poly1305TxChannel)
+    ///     then this error could occur if the provided buffer isn't big enough to store the additional
+    ///     metadata, which can include a nonce and/or an authentication tag. Additionally, if the message
+    ///     sent couldn't be authenticated, which can occur due to data corruption, then this error
+    ///     will be returned.
+    ///  - [`CommunicationError::InternalError`]
+    ///    - This can occur if some internal error happens. This should only occur if something is wrong
+    ///      with the implementation.
+    fn recv_with_timeout<T: Timer>(&mut self, dest: &mut [u8], timer: &mut T) -> Result<usize>;
 }
 
 /// A channel to send data through. See the documentation for [`send`](TxChannel::send) for

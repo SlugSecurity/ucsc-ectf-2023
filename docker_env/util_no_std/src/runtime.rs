@@ -4,7 +4,8 @@
 use crate::{
     communication::{Uart0Controller, Uart1Controller},
     eeprom::EepromController,
-    random, Timer,
+    random,
+    timer::HibTimer,
 };
 use chacha20poly1305::Key;
 use core::time::Duration;
@@ -125,8 +126,8 @@ impl<'a> Runtime<'a> {
     }
 
     /// Creates a timer from a duration.
-    pub fn create_timer(&self, duration: Duration) -> Timer {
-        Timer::new(self.hib, duration)
+    pub fn create_timer(&self, duration: Duration) -> HibTimer {
+        HibTimer::new(self.hib, duration)
     }
 
     /// Fills a slice with random bytes from the main CSPRNG.

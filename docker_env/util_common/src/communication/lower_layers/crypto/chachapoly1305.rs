@@ -2,10 +2,9 @@ use super::{KeyedChannel, RandomSource};
 use crate::communication::{
     self,
     lower_layers::framing::{Frame, FramedTxChannel},
-    CommunicationError, RxChannel, TxChannel,
+    CommunicationError, RxChannel, Timer, TxChannel,
 };
 use chacha20poly1305::{AeadCore, AeadInPlace, KeyInit, XChaCha20Poly1305};
-use core::time::Duration;
 use generic_array::GenericArray;
 use typenum::Unsigned;
 
@@ -50,22 +49,17 @@ impl<T: RxChannel> XChacha20Poly1305RxChannel<T> {
             decryptor: ChannelAlgorithm::new(rx_key),
         }
     }
-}
 
-impl<T: RxChannel> KeyedChannel for XChacha20Poly1305RxChannel<T> {
-    type KeyType = Key;
-
-    fn change_key(&mut self, new_key: &Self::KeyType) {
-        self.decryptor = ChannelAlgorithm::new(new_key);
-    }
-}
-
-impl<T: RxChannel> RxChannel for XChacha20Poly1305RxChannel<T> {
-    fn recv(&mut self, dest: &mut [u8], timeout: Duration) -> communication::Result<usize> {
+    fn recv_with<U: Timer>(
+        &mut self,
+        dest: &mut [u8],
+        read_fn: impl FnOnce(&mut Self, &mut [u8], &mut U) -> communication::Result<usize>,
+        timer: &mut U,
+    ) -> communication::Result<usize> {
         const METADATA_SIZE: usize = TAG_SIZE + NONCE_SIZE;
 
         // Read message from inner channel.
-        let bytes_read = self.channel.recv(dest, timeout)?;
+        let bytes_read = read_fn(self, dest, timer)?;
         let dest = &mut dest[..bytes_read];
 
         // Check we have at least one byte of ciphertext.
@@ -86,6 +80,36 @@ impl<T: RxChannel> RxChannel for XChacha20Poly1305RxChannel<T> {
 
         // Our decrypted buffer is at the beginning of our slice and we return the length of it.
         Ok(msg_body.len())
+    }
+}
+
+impl<T: RxChannel> KeyedChannel for XChacha20Poly1305RxChannel<T> {
+    type KeyType = Key;
+
+    fn change_key(&mut self, new_key: &Self::KeyType) {
+        self.decryptor = ChannelAlgorithm::new(new_key);
+    }
+}
+
+impl<T: RxChannel> RxChannel for XChacha20Poly1305RxChannel<T> {
+    fn recv_with_data_timeout<U: Timer>(
+        &mut self,
+        dest: &mut [u8],
+        timer: &mut U,
+    ) -> communication::Result<usize> {
+        self.recv_with(
+            dest,
+            |ch, d, t| ch.channel.recv_with_data_timeout(d, t),
+            timer,
+        )
+    }
+
+    fn recv_with_timeout<U: Timer>(
+        &mut self,
+        dest: &mut [u8],
+        timer: &mut U,
+    ) -> communication::Result<usize> {
+        self.recv_with(dest, |ch, d, t| ch.channel.recv_with_timeout(d, t), timer)
     }
 }
 

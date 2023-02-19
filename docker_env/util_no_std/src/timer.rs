@@ -4,15 +4,18 @@
 use core::time::Duration;
 use tm4c123x_hal::tm4c123x::HIB;
 
+pub use ucsc_ectf_util_common::timer::*;
+
 /// The timer struct. Used to count a specific amount of time with the hibernation clock. Timers
 /// will only work properly if the uptime of the system is less than 2^32 seconds (~136.2 years)
 /// at the time of timer polling. Timers have an accuracy of 1/32768 seconds.
-pub struct Timer<'a> {
+pub struct HibTimer<'a> {
+    duration: Duration,
     hib: &'a HIB,
     end_subseconds: u64,
 }
 
-impl<'a> Timer<'a> {
+impl<'a> HibTimer<'a> {
     const SUBSECONDS_PER_SECOND: u64 = 32_768;
     const MICROSECONDS_PER_SECOND: u64 = 1_000_000;
 
@@ -53,9 +56,10 @@ impl<'a> Timer<'a> {
 
         let subsecond_duration = Self::time_to_subseconds((duration_secs, duration_subsecs));
 
-        Timer {
+        HibTimer {
             hib,
             end_subseconds: curr_subseconds + subsecond_duration,
+            duration,
         }
     }
 
@@ -70,9 +74,14 @@ impl<'a> Timer<'a> {
     pub fn new(hib: &'a HIB, duration: Duration) -> Self {
         Self::new_impl(hib, duration)
     }
+}
 
-    /// Polls a timer. Returns whether the timer has expired.
-    pub fn poll(&self) -> bool {
+impl<'a> Timer for HibTimer<'a> {
+    fn poll(&mut self) -> bool {
         Self::time_to_subseconds(self.get_time()) >= self.end_subseconds
+    }
+
+    fn reset(&mut self) {
+        *self = HibTimer::new_impl(self.hib, self.duration)
     }
 }

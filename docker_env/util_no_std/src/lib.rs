@@ -5,7 +5,6 @@
 
 pub mod communication;
 pub mod eeprom;
-pub mod msg_parsing;
 pub mod runtime;
 pub mod timer;
 
@@ -13,4 +12,4 @@ pub(crate) mod random;
 
 pub use runtime::Runtime;
 pub use runtime::RuntimePeripherals;
-pub use timer::Timer;
+pub use ucsc_ectf_util_common::msg_parsing;

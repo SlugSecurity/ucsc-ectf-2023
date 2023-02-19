@@ -1,7 +1,7 @@
-use core::time::Duration;
-
 use super::{
-    lower_layers::crypto::{KeyedChannel, XChacha20Poly1305RxChannel, XChacha20Poly1305TxChannel},
+    lower_layers::crypto::{
+        KeyedChannel, RandomSource, XChacha20Poly1305RxChannel, XChacha20Poly1305TxChannel,
+    },
     uart::{FramedUartRxChannel, FramedUartTxChannel},
     RxChannel, TxChannel,
 };
@@ -11,7 +11,7 @@ use tm4c123x_hal::{
     serial::{Rx, RxPin, Tx, TxPin},
     tm4c123x::{UART0, UART1},
 };
-use ucsc_ectf_util_common::communication::lower_layers::crypto::RandomSource;
+use ucsc_ectf_util_common::timer::Timer;
 
 type EncryptedUartTxChannel<'a, UART, TX> =
     XChacha20Poly1305TxChannel<FramedUartTxChannel<'a, UART, TX>, UartRandomSource>;
@@ -121,8 +121,20 @@ macro_rules! uart_impl {
             TX: TxPin<$uart_typ>,
             RX: RxPin<$uart_typ>,
         {
-            fn recv(&mut self, dest: &mut [u8], timeout: Duration) -> super::Result<usize> {
-                self.rx_channel.recv(dest, timeout)
+            fn recv_with_timeout<T: Timer>(
+                &mut self,
+                dest: &mut [u8],
+                timer: &mut T,
+            ) -> super::Result<usize> {
+                self.rx_channel.recv_with_timeout(dest, timer)
+            }
+
+            fn recv_with_data_timeout<T: Timer>(
+                &mut self,
+                dest: &mut [u8],
+                timer: &mut T,
+            ) -> super::Result<usize> {
+                self.rx_channel.recv_with_data_timeout(dest, timer)
             }
         }
 
