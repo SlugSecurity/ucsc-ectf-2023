@@ -1,6 +1,8 @@
-//! This crate contains utility modules for use by the host tools.
+//! This crate contains utility structs and traits for use by the host tools.
 
 #![warn(missing_docs)]
 
+pub mod communication;
+pub mod timer;
+
 pub use ucsc_ectf_util_common::msg_parsing;
-pub use ucsc_ectf_util_common::timer;

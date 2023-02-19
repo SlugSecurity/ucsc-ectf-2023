@@ -84,4 +84,8 @@ impl<'a> Timer for HibTimer<'a> {
     fn reset(&mut self) {
         *self = HibTimer::new_impl(self.hib, self.duration)
     }
+
+    fn duration(&self) -> Duration {
+        self.duration
+    }
 }

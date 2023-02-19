@@ -15,3 +15,4 @@ strip = true
 
 [dependencies]
 ucsc-ectf-util-common = { path = "../util_common" }
+rand = "0.8.5"
