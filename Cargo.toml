@@ -11,7 +11,7 @@ members = [
 ]
 exclude = [
     "docker_env/util_std",
-    "host_tools",
+    "host_tools/*",
 ]
 resolver = "2"
 
@@ -21,7 +21,6 @@ opt-level = 1
 [profile.release]
 lto = true
 codegen-units = 1
-debug = false
 strip = true
 
 # Make sure tm4c123x and tm4c123x-hal use the latest cortex-m and cortex-m-rt crates to fix UB.

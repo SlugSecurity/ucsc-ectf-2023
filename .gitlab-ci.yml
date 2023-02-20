@@ -1,6 +1,5 @@
 stages:
   - lint
-  - lint-pedantic
   - build
   - ectf_tools
   - deploy
@@ -22,11 +21,20 @@ lint:
     paths:
       - output/cache
 
-lint-pedantic:
-  stage: lint-pedantic
+lint-host-tools:
+  stage: lint
   script:
-    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && cargo clippy -- -W clippy::pedantic'
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt/host_tools && cargo clippy -- -D warnings'
   allow_failure: true
+  cache:
+    key: cache
+    paths:
+      - output/cache
+
+lint-pedantic:
+  stage: lint
+  script:
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && cargo clippy -- -W clippy::pedantic; cd host_tools && cargo clippy -- -W clippy::pedantic'
   cache:
     key: cache
     paths:
@@ -34,12 +42,13 @@ lint-pedantic:
 
 build:
   stage: build
+  needs: []
   script:
-    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && CARGO_HOME=output/cache cargo build --release'
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && CARGO_HOME=output/cache cargo build --release; cd host_tools && CARGO_HOME=output/cache cargo build --release'
   artifacts:
     paths:
       - target/thumbv7em-none-eabihf/release
-      - target/x86_64-unknown-linux-gnu/release
+      - host_tools/target/x86_64-unknown-linux-gnu/release
     expire_in: 1 day
   cache:
     key: cache
@@ -48,9 +57,11 @@ build:
 
 ectf_tools:
   stage: ectf_tools
+  needs: [build]
   script:
     - podman container prune -f || true
     - podman build -f docker_env/build_image.Dockerfile --tag ectf:ectf --cgroup-manager=cgroupfs docker_env/
+    - ectf_tools build.tools --design . --name ectf
     - ectf_tools build.depl --design . --name ectf --deployment a
     - ectf_tools build.fob --design . --name ectf --deployment a --fob-name fob1 --fob-out output
     - ectf_tools build.car_fob_pair --design . --name ectf --deployment a --car-name car --fob-name fob0 --car-out output --fob-out output --car-id 256 --pair-pin cafebe --car-unlock-secret 'unlock' --car-feature1-secret 'feature1' --car-feature2-secret 'feature2' --car-feature3-secret 'feature3'

@@ -1,7 +1,6 @@
 #![cfg(debug_assertions)]
 
 use core::iter;
-use tm4c123x_hal::{sysctl::PowerControl, tm4c123x::EEPROM};
 use ucsc_ectf_util_no_std::eeprom::{
     EepromController, EepromReadField, EepromReadOnlyField, EepromReadWriteField, PUBLIC_KEY_SIZE,
 };
@@ -28,17 +27,14 @@ const READ_WRITE_FIELDS: [EepromReadWriteField; 5] = [
 
 const DEFAULT_EEPROM_DATA: u8 = 0xFF; // All 1s.
 
-pub fn run(eeprom_peripheral: &mut EEPROM, power_control: &PowerControl) {
-    // Initialize EEPROM.
-    let mut eeprom = EepromController::new(eeprom_peripheral, power_control).unwrap();
-
+pub fn run(eeprom: &mut EepromController) {
     // Erase EEPROM before running tests.
     eeprom.erase_mem();
 
     // Run tests.
-    read_default(&mut eeprom);
-    basic_write_read_test(&mut eeprom);
-    write_read_bleed_test(&mut eeprom);
+    read_default(eeprom);
+    basic_write_read_test(eeprom);
+    write_read_bleed_test(eeprom);
 }
 
 /// Tests reads of default EEPROM values (0xFF for all bytes).

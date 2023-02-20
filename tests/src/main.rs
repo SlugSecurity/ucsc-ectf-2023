@@ -3,72 +3,46 @@
 #![no_main]
 #![no_std]
 
-extern crate cortex_m;
-extern crate cortex_m_rt;
-extern crate cortex_m_semihosting;
 extern crate panic_semihosting;
-extern crate tm4c123x_hal;
 
 mod eeprom_tests;
 mod timer_tests;
 
 use core::fmt::Write;
 use cortex_m_rt::entry;
-use tm4c123x_hal::{
-    gpio::{GpioExt, AF1},
-    serial::Serial,
-    sysctl::{CrystalFrequency, Oscillator, PllOutputFrequency, SysctlExt, SystemClock},
-    time::Bps,
-    Peripherals,
-};
-
-#[cfg(debug_assertions)]
-use tm4c123x_hal::{delay::Delay, CorePeripherals};
+use cortex_m_semihosting::hio;
+use tm4c123x_hal::{CorePeripherals, Peripherals};
+use ucsc_ectf_util_no_std::{Runtime, RuntimePeripherals};
 
 #[cfg(debug_assertions)]
 #[entry]
 fn main() -> ! {
+    let mut stdout = hio::hstdout().unwrap();
+    writeln!(stdout, "Starting tests...").unwrap();
+
     // Get and initialize peripherals.
     let core_peripherals = CorePeripherals::take().unwrap();
-    let mut peripherals = Peripherals::take().unwrap();
-    let mut sysctl = peripherals.SYSCTL.constrain();
+    let peripherals = Peripherals::take().unwrap();
+    let mut rt_peripherals = RuntimePeripherals::from((core_peripherals, peripherals));
 
-    sysctl.clock_setup.oscillator = Oscillator::Main(
-        CrystalFrequency::_16mhz,
-        SystemClock::UsePll(PllOutputFrequency::_80_00mhz),
-    );
+    {
+        let mut rt = Runtime::new(
+            &mut rt_peripherals,
+            &Default::default(),
+            &Default::default(),
+        );
 
-    let clocks = sysctl.clock_setup.freeze();
+        // Insert tests relying on runtime below. Use asserts to panic if tests fail.
+        eeprom_tests::run(&mut rt.eeprom_controller);
+    }
 
-    // Set up the UART pins.
-    let mut porta = peripherals.GPIO_PORTA.split(&sysctl.power_control);
+    // Insert non-runtime tests below. Use asserts to panic if tests fail.
 
-    // Initialize the serial ports.
-    let mut serial_usb = Serial::uart0(
-        peripherals.UART0,
-        porta.pa1.into_af_push_pull::<AF1>(&mut porta.control),
-        porta.pa0.into_af_pull_down::<AF1>(&mut porta.control),
-        (),
-        (),
-        Bps(115_200),
-        tm4c123x_hal::serial::NewlineMode::Binary,
-        &clocks,
-        &sysctl.power_control,
-    );
+    timer_tests::run(&rt_peripherals.hib, &mut rt_peripherals.delay);
 
-    writeln!(serial_usb, "Beginning tests...").unwrap();
+    // Insert non-runtime tests above. Use asserts to panic if tests fail.
 
-    // Insert test module runs below. Use asserts to panic if tests fail.
-
-    eeprom_tests::run(&mut peripherals.EEPROM, &sysctl.power_control);
-    timer_tests::run(
-        &peripherals.HIB,
-        &mut Delay::new(core_peripherals.SYST, &clocks),
-    );
-
-    // Insert test module runs above. Use asserts to panic if tests fail.
-
-    writeln!(serial_usb, "Tests passed!").unwrap();
+    writeln!(stdout, "Tests passed!").unwrap();
 
     #[allow(clippy::empty_loop)]
     loop {}
@@ -77,34 +51,8 @@ fn main() -> ! {
 #[cfg(not(debug_assertions))]
 #[entry]
 fn main() -> ! {
-    // Get and initialize peripherals.
-    let peripherals = Peripherals::take().unwrap();
-    let mut sysctl = peripherals.SYSCTL.constrain();
-
-    sysctl.clock_setup.oscillator = Oscillator::Main(
-        CrystalFrequency::_16mhz,
-        SystemClock::UsePll(PllOutputFrequency::_80_00mhz),
-    );
-
-    let clocks = sysctl.clock_setup.freeze();
-
-    // Set up the UART pins.
-    let mut porta = peripherals.GPIO_PORTA.split(&sysctl.power_control);
-
-    // Initialize the serial ports.
-    let mut serial_usb = Serial::uart0(
-        peripherals.UART0,
-        porta.pa1.into_af_push_pull::<AF1>(&mut porta.control),
-        porta.pa0.into_af_pull_down::<AF1>(&mut porta.control),
-        (),
-        (),
-        Bps(115_200),
-        tm4c123x_hal::serial::NewlineMode::Binary,
-        &clocks,
-        &sysctl.power_control,
-    );
-
-    writeln!(serial_usb, "Tests are disabled in release mode!").unwrap();
+    let mut stdout = hio::hstdout().unwrap();
+    writeln!(stdout, "Tests are disabled in release mode!").unwrap();
 
     #[allow(clippy::empty_loop)]
     loop {}

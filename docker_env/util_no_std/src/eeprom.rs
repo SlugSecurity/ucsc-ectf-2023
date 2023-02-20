@@ -43,7 +43,7 @@ impl<'a> EepromController<'a> {
     ///
     /// Errors:
     /// - [EepromError::InitError] if the EEPROM controller fails to initialize.
-    pub fn new(
+    pub(crate) fn new(
         eeprom: &'a mut EEPROM,
         power_control: &'a PowerControl,
     ) -> Result<Self, EepromError> {

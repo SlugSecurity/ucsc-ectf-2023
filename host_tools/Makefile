@@ -1,5 +1,7 @@
 host_tools: FORCE
-	cp -r . /tmp/bld
-	cd /tmp/bld; cargo build --bin host_tools --release --out-dir ${TOOLS_OUT_DIR}
+	mkdir -p /tmp/bld/host_tools
+	cp -r /docker_env /tmp/bld/
+	cp -r . /tmp/bld/host_tools
+	cd /tmp/bld/host_tools && cargo build --release --out-dir ${TOOLS_OUT_DIR} -Z unstable-options
 
 FORCE:;

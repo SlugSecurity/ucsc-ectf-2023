@@ -141,8 +141,8 @@ macro_rules! init_uart {
 init_uart!(UART0, initialize_uart0, uart0);
 init_uart!(UART1, initialize_uart1, uart1);
 
-/// All peripherals and core peripherals, but with the system clock, power control, and delay
-/// initialized.
+/// All peripherals and core peripherals, but with the system clock, power control, PF4 GPIO pin,
+/// delay, and UART pins initialized.
 #[allow(dead_code, missing_docs)]
 pub struct RuntimePeripherals {
     pub cbp: CBP,

@@ -14,7 +14,7 @@ pub struct HibController<'a> {
 
 impl<'a> HibController<'a> {
     /// Creates a new hibernation controller.
-    pub fn new(hib: &'a mut HIB, power_control: &PowerControl) -> Self {
+    pub(crate) fn new(hib: &'a mut HIB, power_control: &PowerControl) -> Self {
         // Enable hibernation module. This is enabled by default, but we enable it here just in case.
         sysctl::control_power(
             power_control,
