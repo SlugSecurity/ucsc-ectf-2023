@@ -16,8 +16,9 @@ strip = true
 
 [dependencies]
 chacha20poly1305 = { version = "0.10.1", default-features = false, features = ["heapless"] }
-generic-array = "0.14"
+generic-array = { version = "0.14", features = ["serde"] }
 typenum = "1.16"
 hex = {version = "0.4", default-features = false }
-serde = { version = "1.0.152", default-features = false }
-serde_repr = { version = "0.1.10", default-features = false }
+serde = { version = "1.0.152", default-features = false, features = ["derive"] }
+k256 = { version = "0.12.0", default-features = false, features = ["ecdsa"] }
+heapless = { version = "0.7.16", default-features = false, features = ["serde"] }

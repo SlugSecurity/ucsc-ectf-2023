@@ -5,5 +5,5 @@
 
 // TODO: pub mod button;
 pub mod communication;
-pub mod msg_parsing;
+pub mod messages;
 pub mod timer;

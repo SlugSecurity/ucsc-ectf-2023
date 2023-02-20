@@ -403,6 +403,7 @@ version = "0.14.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bff49e947297f3312447abdca79f45f4738097cc82b06e72054d2223f601f1b9"
 dependencies = [
+ "serde",
  "typenum",
  "version_check",
 ]
@@ -744,17 +745,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_repr"
-version = "0.1.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a5ec9fa74a20ebbe5d9ac23dac1fc96ba0ecfe9f50f2843b52e537b10fbcb4e"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "serdect"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -946,9 +936,10 @@ version = "0.1.0"
 dependencies = [
  "chacha20poly1305",
  "generic-array 0.14.6",
+ "heapless",
  "hex",
+ "k256",
  "serde",
- "serde_repr",
  "typenum",
 ]
 

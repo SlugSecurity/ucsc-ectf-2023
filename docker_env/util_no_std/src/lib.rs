@@ -14,4 +14,4 @@ pub(crate) mod random;
 mod runtime;
 
 pub use runtime::*;
-pub use ucsc_ectf_util_common::msg_parsing;
+pub use ucsc_ectf_util_common::messages;

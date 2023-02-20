@@ -5,4 +5,5 @@
 pub mod communication;
 pub mod timer;
 
-pub use ucsc_ectf_util_common::msg_parsing;
+pub use ucsc_ectf_util_common::messages;
+pub use ucsc_ectf_util_common::timer;
