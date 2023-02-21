@@ -27,51 +27,50 @@ source ./finding_friends/get_board_map.nu
 # Find free boards.
 let free_boards = ($boards | where { |i| (flock -n $i.usb_path echo 1) == "1" })
 
-# Take all but the last board.
-let ping_boards = ($free_boards | first (($free_boards | length) - 1))
+$free_boards | each { |pong_board|
+    let ping_boards = ($free_boards | where { |i| $i != $pong_board })
 
-# Take the last board.
-let pong_board = ($free_boards | last)
+    print "Ping Boards"
+    print $ping_boards
 
-print "Ping Boards"
-print $ping_boards
+    print "Pong Board"
+    print $pong_board
 
-print "Pong Board"
-print $pong_board
+    # Flash pong board.
+    print "Flashing pong board."
+    cargo build -r --bin friendly_pong err> /dev/null
+    do -i { sh -c (do $PROGRAM_CMD $pong_board.bus_port friendly_pong) err> /dev/null } 
 
-# Flash pong board.
-print "Flashing pong board."
-cargo build -r --bin friendly_pong err> /dev/null
-do -i { sh -c (do $PROGRAM_CMD $pong_board.bus_port friendly_pong) err> /dev/null } 
+    # Flash ping boards, loading each with a different BUS_PORT value.
+    print "Flashing ping boards."
+    $ping_boards | each { |i|
+        let-env BUS_PORT = ($i.bus_port);
+        cargo build -r --bin friendly_ping err> /dev/null;
+        do -i { sh -c (do $PROGRAM_CMD $i.bus_port friendly_ping) err> /dev/null };
+        sleep 50ms
+    }
 
-# Flash ping boards, loading each with a different BUS_PORT value.
-print "Flashing ping boards."
-$ping_boards | each { |i|
-    let-env BUS_PORT = ($i.bus_port);
-    cargo build -r --bin friendly_ping err> /dev/null;
-    do -i { sh -c (do $PROGRAM_CMD $i.bus_port friendly_ping) err> /dev/null };
-    sleep 50ms
+    # Finding friends!
+    print "Finding friends!"
+
+    # Fix the TTY because you slobs can't clean up after yourselves.
+    stty -F $pong_board.tty 115200
+    try {
+        let bp = (timeout 1 head -n 5 $pong_board.tty | str trim | split row "\n" | get 2)
+        let friend = ($boards | where { |i| $bp == $i.bus_port } | first)
+
+        # Set environment variables to pass to child shell.
+        let-env BOARDS = ([$pong_board, $friend] | to nuon)
+
+        print $"Your boards are ($pong_board.bus_port) and ($friend.bus_port)."
+
+        # Lock both USB devices and spawn child shell.
+        flock $pong_board.usb_path flock $friend.usb_path nu -c "rm /tmp/friendlock1; sh -c $env.SHELL"
+
+        # We are satisified and need our friends no longer, also we stop looking for more friends.
+        print $"Releasing ($pong_board.bus_port) and ($friend.bus_port)."
+        exit 0
+    } catch {
+        print "Trying again!"
+    }
 }
-
-# Finding friends!
-print "Finding friends!"
-
-# Fix the TTY because you slobs can't clean up after yourselves.
-stty -F $pong_board.tty 115200
-let bp = (head -n 5 $pong_board.tty | str trim | split row "\n" | get 2)
-let friend = try {
-    $boards | where { |i| $bp == $i.bus_port } | first
-} catch {
-    print "No free board pairs could be found! Try again!"
-    exit 1
-}
-
-# Set environment variables to pass to child shell.
-let-env BOARDS = ([$pong_board, $friend] | to nuon)
-
-print $"Your boards are ($pong_board.bus_port) and ($friend.bus_port)."
-
-# Lock both USB devices and spawn child shell.
-flock $pong_board.usb_path flock $friend.usb_path nu -c "rm /tmp/friendlock1; sh -c $env.SHELL"
-
-print $"Releasing ($pong_board.bus_port) and ($friend.bus_port)."
