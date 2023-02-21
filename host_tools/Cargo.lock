@@ -701,6 +701,8 @@ dependencies = [
 name = "ucsc-ectf-enable-feature"
 version = "0.1.0"
 dependencies = [
+ "clap",
+ "postcard",
  "ucsc-ectf-util-std",
 ]
 
