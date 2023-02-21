@@ -715,6 +715,8 @@ dependencies = [
 name = "ucsc-ectf-pair-fob"
 version = "0.1.0"
 dependencies = [
+ "clap",
+ "postcard",
  "ucsc-ectf-util-std",
 ]
 

@@ -44,7 +44,7 @@ pub enum Uart0Message<'a> {
     /// See [`PairingPin`] for more details.
     PairingPin(PairingPin),
 
-    /// The response sent from a paired key fob to the pairing host tool in response
+    /// The response sent from an unpaired key fob to the pairing host tool in response
     /// to a [`Uart0Message::PairingPin`].
     ///
     /// See [`HostToolAck`] for more details.
