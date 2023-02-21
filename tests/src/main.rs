@@ -6,6 +6,7 @@
 extern crate panic_semihosting;
 
 mod eeprom_tests;
+mod random_tests;
 mod timer_tests;
 
 use core::fmt::Write;
@@ -34,6 +35,7 @@ fn main() -> ! {
 
         // Insert tests relying on runtime below. Use asserts to panic if tests fail.
         eeprom_tests::run(&mut rt.eeprom_controller);
+        random_tests::run(&mut rt, &mut stdout);
     }
 
     // Insert non-runtime tests below. Use asserts to panic if tests fail.
