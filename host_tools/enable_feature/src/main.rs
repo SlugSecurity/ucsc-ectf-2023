@@ -3,7 +3,7 @@ use std::{error::Error, fs::File, io::Read, path::PathBuf, time::Duration};
 use clap::Parser;
 use ucsc_ectf_util_std::{
     communication::{self, CommunicationError, RxChannel, TxChannel, VerifiedFramedTcpSocket},
-    messages::{EnableFeatureMessage, HostToolAck, PackagedFeature, Uart0Message},
+    messages::{EnableFeatureMessage, HostToolAck, PackagedFeatureSigned, Uart0Message},
     timer::StdTimer,
 };
 
@@ -20,7 +20,7 @@ struct Args {
     package_name: String,
 }
 
-fn get_package(name: String, package_vec: &mut Vec<u8>) -> Result<PackagedFeature, Box<dyn Error>> {
+fn get_package(name: String, package_vec: &mut Vec<u8>) -> Result<PackagedFeatureSigned, Box<dyn Error>> {
     let mut path = PathBuf::from("/package_dir");
     path.push(name);
 
@@ -32,7 +32,7 @@ fn get_package(name: String, package_vec: &mut Vec<u8>) -> Result<PackagedFeatur
     Ok(postcard::from_bytes(package_vec)?)
 }
 
-fn send_package(package: PackagedFeature, port: u16) -> communication::Result<()> {
+fn send_package(package: PackagedFeatureSigned, port: u16) -> communication::Result<()> {
     let mut socket = VerifiedFramedTcpSocket::keyless_connect(("ectf-net", port))?;
     let enable_req = Uart0Message::EnableFeatureRequest(EnableFeatureMessage(package));
     let mut enable_req_bytes =

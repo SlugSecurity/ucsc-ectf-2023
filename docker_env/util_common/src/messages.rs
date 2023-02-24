@@ -118,15 +118,22 @@ pub struct UnlockChallenge {
     pub challenge: Nonce,
 }
 
-/// A signed packaged feature associated with the car it's tied to.
-/// The signature guarantees that it's not tampered with.
+/// A packaged feature, containing the Car ID and Feature Number.
 #[derive(Serialize, Deserialize)]
-pub struct PackagedFeature<'a> {
+pub struct PackagedFeatureUnsigned {
     /// The ID of the car this feature is meant for.
     pub car_id: CarId,
 
     /// The number for the feature to enable on the linked car
     pub feature_number: FeatureNumber,
+}
+
+/// A signed packaged feature associated with the car it's tied to.
+/// The signature guarantees that it's not tampered with.
+#[derive(Serialize, Deserialize)]
+pub struct PackagedFeatureSigned<'a> {
+    /// The helper struct containing the Car ID and Feature Number.
+    pub packaged_feature: PackagedFeatureUnsigned,
 
     /// A signature for the car ID and feature number encoded in DER format.
     pub signature: &'a [u8],
@@ -145,7 +152,7 @@ pub struct UnlockChallengeResponse<'a> {
 
     /// A list of features that are enabled for this car.
     #[serde(borrow)]
-    pub features: heapless::Vec<PackagedFeature<'a>, 3>,
+    pub features: heapless::Vec<PackagedFeatureSigned<'a>, 3>,
 }
 
 /// The message containing the unlock secret and the feature secrets of any
@@ -163,7 +170,7 @@ pub struct UnlockMessage<'a> {
 /// A message containing a signed packaged feature to enable a feature
 /// on a car. It is sent to a paired key fob associated with a car.
 #[derive(Serialize, Deserialize)]
-pub struct EnableFeatureMessage<'a>(#[serde(borrow)] pub PackagedFeature<'a>);
+pub struct EnableFeatureMessage<'a>(#[serde(borrow)] pub PackagedFeatureSigned<'a>);
 
 /// A struct containing the pairing pin needed to initiate a pairing
 /// sequence.
