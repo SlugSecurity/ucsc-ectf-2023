@@ -5,7 +5,7 @@ use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
 
 use k256::SecretKey;
-use postcard::to_allocvec;
+use k256::pkcs8::EncodePublicKey;
 use ucsc_ectf_eeprom_layout::{
     EepromReadField, EepromReadOnlyField, EepromReadWriteField, SECRET_SIZE,
 };
@@ -70,7 +70,12 @@ fn main() {
         let feature_signing_key = SecretKey::from_be_bytes(&feature_signing_key_bytes).unwrap();
         let feature_verifying_key = feature_signing_key.public_key();
         feature_verifying_key_file
-            .write_all(&to_allocvec(&feature_verifying_key).unwrap())
+            .write_all(
+                feature_verifying_key
+                    .to_public_key_der()
+                    .unwrap()
+                    .as_bytes(),
+            )
             .unwrap();
 
         eeprom_field_from_path(

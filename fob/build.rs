@@ -6,9 +6,9 @@ use std::path::{Path, PathBuf};
 
 use ecdsa::signature::Signer;
 use hex::decode;
-use k256::ecdsa::{Signature, SigningKey};
 use k256::SecretKey;
-use postcard::to_allocvec;
+use k256::ecdsa::{Signature, SigningKey};
+use k256::pkcs8::EncodePublicKey;
 use ucsc_ectf_eeprom_layout::{EepromReadField, EepromReadOnlyField, EepromReadWriteField};
 
 fn eeprom_field_from_path<P, F>(eeprom_file: &File, field: F, path: P)
@@ -90,7 +90,12 @@ fn main() {
         let pairing_signing_key = SigningKey::from_bytes(&private_key_bytes).unwrap();
         let pairing_verifying_key = pairing_signing_key.verifying_key();
         pairing_verifying_key_file
-            .write_all(&to_allocvec(&pairing_verifying_key).unwrap())
+            .write_all(
+                pairing_verifying_key
+                    .to_public_key_der()
+                    .unwrap()
+                    .as_bytes(),
+            )
             .unwrap();
 
         pairing_private_key_file
@@ -98,12 +103,12 @@ fn main() {
             .unwrap();
         let pairing_private_key = SecretKey::from_be_bytes(&private_key_bytes).unwrap();
         let pairing_public_key = pairing_private_key.public_key();
-        let pairing_public_key_bytes = to_allocvec(&pairing_public_key).unwrap();
+        let pairing_public_key_der = pairing_public_key.to_public_key_der().unwrap();
 
         let pairing_public_key_signature: Signature =
-            pairing_signing_key.sign(&pairing_public_key_bytes);
+            pairing_signing_key.sign(pairing_public_key_der.as_bytes());
         pairing_public_key_signature_file
-            .write_all(&to_allocvec(&pairing_public_key_signature).unwrap())
+            .write_all(&pairing_public_key_signature.to_bytes())
             .unwrap();
 
         eeprom_field_from_path(
@@ -153,11 +158,7 @@ fn main() {
 
         if let Some(pairing_pin) = option_env!("PAIR_PIN") {
             let buf = decode(pairing_pin).unwrap();
-            eeprom_field_from_buf(
-                &eeprom_file,
-                EepromReadWriteField::PairingPin,
-                &buf,
-            );
+            eeprom_field_from_buf(&eeprom_file, EepromReadWriteField::PairingPin, &buf);
             eeprom_field_from_buf(&eeprom_file, EepromReadWriteField::PairingByte, &[1u8; 1]);
         }
 
