@@ -7,6 +7,7 @@ categories = ["embedded", "no-std"]
 license = "MIT"
 
 [profile.release]
+opt-level = "z"
 lto = true
 codegen-units = 1
 strip = true
@@ -21,6 +22,7 @@ postcard = { version = "1.0.4", default-features = false }
 tm4c123x-hal = { version = "0.10.2", features = ["rt"] }
 ucsc-ectf-util-no-std = { path = "../docker_env/util_no_std" }
 zeroize = { version = "1.5.7", default-features = false }
+k256 = { version = "0.12.0", default-features = false, features = ["pkcs8", "ecdh"] }
 
 [build-dependencies]
 ecdsa = { version = "0.15.1", features = ["serde", "signing"] }

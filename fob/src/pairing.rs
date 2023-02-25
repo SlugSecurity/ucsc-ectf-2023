@@ -1,4 +1,4 @@
-use ucsc_ectf_util_no_std::Runtime;
+use ucsc_ectf_util_no_std::{messages::Uart0Message, Runtime};
 
 pub(crate) fn unpaired_listen_and_pair(rt: &mut Runtime) {
     loop {
@@ -12,6 +12,6 @@ pub(crate) fn unpaired_listen_and_pair(rt: &mut Runtime) {
     }
 }
 
-pub(crate) fn paired_process_msg(rt: &mut Runtime, receive_buffer: &[u8]) {
+pub(crate) fn paired_process_msg(rt: &mut Runtime, msg: &Uart0Message) {
     // TODO: Check message type and pair the unpaired fob.
 }

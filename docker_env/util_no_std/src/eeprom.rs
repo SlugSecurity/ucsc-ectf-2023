@@ -9,7 +9,7 @@ pub use ucsc_ectf_eeprom_layout::EepromReadField;
 pub use ucsc_ectf_eeprom_layout::EepromReadOnlyField;
 pub use ucsc_ectf_eeprom_layout::EepromReadWriteField;
 pub use ucsc_ectf_eeprom_layout::{
-    CAR_ID_SIZE, MESSAGE_SIZE, PAIRING_BYTE_SIZE, PAIRING_PIN_SIZE, PUBLIC_KEY_SIZE, SECRET_SIZE,
+    BYTE_SIZE, CAR_ID_SIZE, MESSAGE_SIZE, PAIRING_PIN_SIZE, PUBLIC_KEY_SIZE, SECRET_SIZE,
     SIGNATURE_SIZE,
 };
 

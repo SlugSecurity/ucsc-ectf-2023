@@ -6,11 +6,6 @@ authors = ["2023 UCSC eCTF Team"]
 categories = ["embedded", "no-std"]
 license = "MIT"
 
-[profile.release]
-lto = true
-codegen-units = 1
-strip = true
-
 [dependencies]
 chacha20poly1305 = { version = "0.10.1", default-features = false, features = ["heapless"] }
 generic-array = { version = "0.14", features = ["serde"] }

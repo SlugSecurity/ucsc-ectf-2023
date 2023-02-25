@@ -16,7 +16,8 @@ use cortex_m_semihosting::hio;
 use tm4c123x_hal::{CorePeripherals, Peripherals};
 use ucsc_ectf_util_no_std::{
     communication::RxChannel,
-    eeprom::{EepromReadWriteField, PAIRING_BYTE_SIZE},
+    eeprom::{EepromReadWriteField, BYTE_SIZE},
+    messages::Uart0Message,
     Runtime, RuntimePeripherals,
 };
 
@@ -24,7 +25,9 @@ mod features;
 mod pairing;
 mod unlock;
 
-const MAX_MESSAGE_SIZE: usize = 1024;
+/// The maximum size of a message that can be received/sent.
+pub const MAX_MESSAGE_SIZE: usize = 1024;
+
 const UNPAIRED: u8 = 0;
 const MS_TO_WAIT_FOR_MSG: u64 = 5;
 
@@ -47,7 +50,7 @@ fn main() -> ! {
     );
 
     // Get pairing status.
-    let mut pairing_byte = [0; PAIRING_BYTE_SIZE];
+    let mut pairing_byte = [0; BYTE_SIZE];
 
     rt.eeprom_controller
         .read_slice(EepromReadWriteField::PairingByte, &mut pairing_byte)
@@ -69,8 +72,13 @@ fn main() -> ! {
                 .hib_controller
                 .create_timer(Duration::from_millis(MS_TO_WAIT_FOR_MSG)),
         ) {
-            pairing::paired_process_msg(&mut rt, &receive_buffer[..size_read]);
-            features::paired_process_msg(&mut rt, &receive_buffer[..size_read]);
+            let msg = match postcard::from_bytes::<Uart0Message>(&receive_buffer[..size_read]) {
+                Ok(msg) => msg,
+                Err(_) => continue,
+            };
+
+            pairing::paired_process_msg(&mut rt, &msg);
+            features::paired_process_msg(&mut rt, &msg);
         }
 
         // Process non-message events.

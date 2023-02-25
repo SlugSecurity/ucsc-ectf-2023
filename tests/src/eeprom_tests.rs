@@ -17,12 +17,13 @@ const READ_ONLY_FIELDS: [EepromReadOnlyField; 9] = [
     EepromReadOnlyField::UnlockMessage,
 ];
 
-const READ_WRITE_FIELDS: [EepromReadWriteField; 5] = [
+const READ_WRITE_FIELDS: [EepromReadWriteField; 6] = [
     EepromReadWriteField::UnlockKeyOne,
     EepromReadWriteField::UnlockKeyTwo,
     EepromReadWriteField::CarId,
     EepromReadWriteField::PairingByte,
     EepromReadWriteField::PairingPin,
+    EepromReadWriteField::PairingLongerCooldownByte,
 ];
 
 const DEFAULT_EEPROM_DATA: u8 = 0xFF; // All 1s.

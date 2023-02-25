@@ -186,7 +186,7 @@ pub struct HostToolAck(pub bool);
 /// A signed public key.
 #[derive(Serialize, Deserialize)]
 pub struct VerifiedPublicKey<'a> {
-    /// The public key in DER format.
+    /// The public key in SEC1 format.
     pub public_key: &'a [u8],
 
     /// The signature authenticating ``public_key`` in DER format.

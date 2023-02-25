@@ -6,11 +6,6 @@ authors = ["2023 UCSC eCTF Team"]
 categories = ["embedded", "no-std"]
 license = "MIT"
 
-[profile.release]
-lto = true
-codegen-units = 1
-strip = true
-
 [dependencies]
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7.2"

@@ -24,8 +24,8 @@ pub const MESSAGE_SIZE: usize = 64;
 /// The size of the car ID. 32 bits = 4 bytes.
 pub const CAR_ID_SIZE: usize = 4;
 
-/// The size of the pairing byte.
-pub const PAIRING_BYTE_SIZE: usize = 1;
+/// The size of a byte.
+pub const BYTE_SIZE: usize = 1;
 
 /// The size of the pairing PIN.
 pub const PAIRING_PIN_SIZE: usize = 4;
@@ -81,13 +81,19 @@ const CAR_ID_BOUNDS: EepromFieldBounds = EepromFieldBounds {
 /// The bounds of the pairing byte EEPROM field.
 const PAIRING_BYTE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     address: CAR_ID_BOUNDS.address + CAR_ID_BOUNDS.size,
-    size: PAIRING_BYTE_SIZE,
+    size: BYTE_SIZE,
 };
 
 /// The bounds of the pairing PIN EEPROM field.
 const PAIRING_PIN_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     address: PAIRING_BYTE_BOUNDS.address + PAIRING_BYTE_BOUNDS.size + 3, // 3 bytes of padding for word alignment.
     size: PAIRING_PIN_SIZE,
+};
+
+/// The bounds of the pairing longer cooldown byte EEPROM field.
+const PAIRING_LONGER_COOLDOWN_BYTE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+    address: PAIRING_PIN_BOUNDS.address + PAIRING_PIN_BOUNDS.size,
+    size: BYTE_SIZE,
 };
 
 /// The bounds of the feature three message EEPROM field.
@@ -153,6 +159,8 @@ pub enum EepromReadWriteField {
     /// The pairing PIN used to authenticate the pairing of an unpaired key fob to a car, given a
     /// paired key fob.
     PairingPin,
+    /// Whether or not the longer pairing cooldown is active.
+    PairingLongerCooldownByte,
 }
 
 /// A struct for EEPROM field bounds.
@@ -193,6 +201,7 @@ impl EepromReadField for EepromReadWriteField {
             Self::CarId => CAR_ID_BOUNDS,
             Self::PairingByte => PAIRING_BYTE_BOUNDS,
             Self::PairingPin => PAIRING_PIN_BOUNDS,
+            Self::PairingLongerCooldownByte => PAIRING_LONGER_COOLDOWN_BYTE_BOUNDS,
         }
     }
 }
