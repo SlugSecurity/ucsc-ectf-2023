@@ -28,11 +28,16 @@ if [ $BUS_PORT = "" ]; then
     exit 1
 fi
 
-# Start OpenOCD.
-openocd -f $BOARD_CFG -c "tcl_port disabled" -c "telnet_port disabled" -c "gdb_port 3333" -c "adapter usb location $b" 2> /dev/null &
-
-# Build and run the project in GDB with the temporary .gdbinit file.
+# Build the project.
 cargo build --bin $1
+
+# Extract the vector table.
+arm-none-eabi-objcopy -O binary --only-section=.vector_table /mnt/target/thumbv7em-none-eabihf/debug/${1} /tmp/vt.bin
+
+# Start OpenOCD.
+openocd -f $BOARD_CFG -c "tcl_port disabled" -c "telnet_port disabled" -c "gdb_port 3333" -c "adapter usb location $BUS_PORT" -c 'init' -c 'program /tmp/vt.bin 0x0' 2> /dev/null &
+
+# Run the project in GDB.
 echo -e "\033[0;31mYou are currently debugging $BUS_PORT.\033[0m"
 arm-none-eabi-gdb -q /mnt/target/thumbv7em-none-eabihf/debug/${1}
 
