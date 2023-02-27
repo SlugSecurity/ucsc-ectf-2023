@@ -3,7 +3,6 @@
 #![warn(missing_docs)]
 #![no_std]
 
-// TODO: pub mod button;
 pub mod communication;
 pub mod messages;
 pub mod timer;
