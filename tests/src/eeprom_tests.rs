@@ -75,7 +75,9 @@ fn basic_write_read_test(eeprom: &mut EepromController) {
 
     for field in READ_WRITE_FIELDS.into_iter() {
         data.fill(test_data_iter.next().unwrap());
-        eeprom.write_slice(field, &data).unwrap();
+        eeprom
+            .write_slice(field, &data[..field.get_field_bounds().size])
+            .unwrap();
         read_data.fill(0); // Reset read data prior to reading into buffer.
         eeprom.read_slice(field, &mut read_data).unwrap();
 
@@ -94,7 +96,9 @@ fn write_read_bleed_test(eeprom: &mut EepromController) {
     // Set all writable fields to the default values before starting test.
     for field in READ_WRITE_FIELDS.into_iter() {
         data.fill(DEFAULT_EEPROM_DATA);
-        eeprom.write_slice(field, &data).unwrap();
+        eeprom
+            .write_slice(field, &data[..field.get_field_bounds().size])
+            .unwrap();
     }
 
     // Test that writing to one field does not affect another field.
@@ -105,7 +109,9 @@ fn write_read_bleed_test(eeprom: &mut EepromController) {
 
     for fields in READ_WRITE_FIELDS.windows(2) {
         data.fill(test_data_iter.next().unwrap());
-        eeprom.write_slice(fields[0], &data).unwrap();
+        eeprom
+            .write_slice(fields[0], &data[..fields[0].get_field_bounds().size])
+            .unwrap();
         read_data.fill(0); // Reset read data prior to reading into buffer.
         eeprom.read_slice(fields[1], &mut read_data).unwrap();
 

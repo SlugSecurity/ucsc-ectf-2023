@@ -179,16 +179,16 @@ impl<'a> EepromController<'a> {
     /// Writes a slice of bytes to the EEPROM.
     ///
     /// # Errors:
-    /// - [EepromError::SizeError] if the source buffer is too small to hold the EEPROM field.
+    /// - [EepromError::SizeError] if the source buffer is not the size of the EEPROM field.
     pub fn write_slice(
         &mut self,
         field: EepromReadWriteField,
         src: &[u8],
     ) -> Result<(), EepromError> {
-        // Check that the source buffer is large enough.
+        // Check that the source buffer is the correct size.
         let field_bounds = field.get_field_bounds();
 
-        if src.len() < field_bounds.size {
+        if src.len() != field_bounds.size {
             return Err(EepromError::SizeError);
         }
 
