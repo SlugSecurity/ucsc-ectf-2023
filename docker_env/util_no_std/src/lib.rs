@@ -6,6 +6,7 @@
 pub mod button;
 pub mod communication;
 pub mod eeprom;
+pub mod features;
 pub mod hib;
 pub mod timer;
 

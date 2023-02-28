@@ -6,10 +6,12 @@ use std::path::{Path, PathBuf};
 
 use ecdsa::signature::Signer;
 use hex::decode;
-use k256::SecretKey;
 use k256::ecdsa::{Signature, SigningKey};
 use k256::pkcs8::EncodePublicKey;
-use ucsc_ectf_eeprom_layout::{EepromReadField, EepromReadOnlyField, EepromReadWriteField};
+use k256::SecretKey;
+use ucsc_ectf_eeprom_layout::{
+    EepromReadField, EepromReadOnlyField, EepromReadWriteField, SECRET_SIZE,
+};
 
 fn eeprom_field_from_path<P, F>(eeprom_file: &File, field: F, path: P)
 where
@@ -74,6 +76,15 @@ fn main() {
             File::open(format!("{secrets_dir}/PAIRING_PRIVATE_KEY")).unwrap();
         let mut pairing_public_key_signature_file =
             File::create(format!("{secrets_dir}/PAIRING_PUBLIC_KEY_SIGNATURE")).unwrap();
+        let mut feature_signing_key_file =
+            File::open(format!("{secrets_dir}/FEATURE_SIGNING_KEY")).unwrap();
+        let mut feature_verifying_key_file = OpenOptions::new()
+            .write(true)
+            .create(false)
+            .truncate(false)
+            .append(false)
+            .open(format!("{secrets_dir}/FEATURE_VERIFYING_KEY"))
+            .unwrap();
         let eeprom_file = OpenOptions::new()
             .write(true)
             .create(false)
@@ -111,6 +122,21 @@ fn main() {
             .write_all(&pairing_public_key_signature.to_bytes())
             .unwrap();
 
+        let mut feature_signing_key_bytes = [0u8; SECRET_SIZE];
+        feature_signing_key_file
+            .read_exact(&mut feature_signing_key_bytes)
+            .unwrap();
+        let feature_signing_key = SigningKey::from_bytes(&feature_signing_key_bytes).unwrap();
+        let feature_verifying_key = feature_signing_key.verifying_key();
+        feature_verifying_key_file
+            .write_all(
+                feature_verifying_key
+                    .to_public_key_der()
+                    .unwrap()
+                    .as_bytes(),
+            )
+            .unwrap();
+
         eeprom_field_from_path(
             &eeprom_file,
             EepromReadOnlyField::PairingPrivateKey,
@@ -127,6 +153,12 @@ fn main() {
             &eeprom_file,
             EepromReadOnlyField::PairingVerifyingKey,
             format!("{secrets_dir}/PAIRING_VERIFYING_KEY"),
+        );
+
+        eeprom_field_from_path(
+            &eeprom_file,
+            EepromReadOnlyField::FeatureVerifyingKey,
+            format!("{secrets_dir}/FEATURE_VERIFYING_KEY"),
         );
 
         eeprom_field_from_path(

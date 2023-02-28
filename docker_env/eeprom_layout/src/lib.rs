@@ -30,6 +30,9 @@ pub const BYTE_SIZE: usize = 1;
 /// The size of the pairing PIN.
 pub const PAIRING_PIN_SIZE: usize = 4;
 
+/// The size of a signed packaged feature.
+pub const PACKAGED_FEATURE_SIGNED_SIZE: usize = 96;
+
 /// The bounds of the pairing secret EEPROM field.
 const PAIRING_PRIVATE_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     address: EEPROM_START_ADDRESS,
@@ -94,6 +97,26 @@ const PAIRING_PIN_BOUNDS: EepromFieldBounds = EepromFieldBounds {
 const PAIRING_LONGER_COOLDOWN_BYTE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     address: PAIRING_PIN_BOUNDS.address + PAIRING_PIN_BOUNDS.size,
     size: BYTE_SIZE,
+};
+
+/// The bounds of the feature one signed packaged feature EEPROM field.
+const FEATURE_ONE_SIGNED_PACKAGED_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+    address: PAIRING_LONGER_COOLDOWN_BYTE_BOUNDS.address
+        + PAIRING_LONGER_COOLDOWN_BYTE_BOUNDS.size
+        + 3, // 3 bytes of padding for word alignment.
+    size: PACKAGED_FEATURE_SIGNED_SIZE,
+};
+
+/// The bounds of the feature two signed packaged feature EEPROM field.
+const FEATURE_TWO_SIGNED_PACKAGED_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+    address: FEATURE_ONE_SIGNED_PACKAGED_BOUNDS.address + FEATURE_ONE_SIGNED_PACKAGED_BOUNDS.size,
+    size: PACKAGED_FEATURE_SIGNED_SIZE,
+};
+
+/// The bounds of the feature three signed packaged feature EEPROM field.
+const FEATURE_THREE_SIGNED_PACKAGED_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+    address: FEATURE_TWO_SIGNED_PACKAGED_BOUNDS.address + FEATURE_TWO_SIGNED_PACKAGED_BOUNDS.size,
+    size: PACKAGED_FEATURE_SIGNED_SIZE,
 };
 
 /// The bounds of the feature three message EEPROM field.
@@ -161,6 +184,12 @@ pub enum EepromReadWriteField {
     PairingPin,
     /// Whether or not the longer pairing cooldown is active.
     PairingLongerCooldownByte,
+    /// The signed packaged feature for feature one.
+    FeatureOneSignedPackaged,
+    /// The signed packaged feature for feature two.
+    FeatureTwoSignedPackaged,
+    /// The signed packaged feature for feature three.
+    FeatureThreeSignedPackaged,
 }
 
 /// A struct for EEPROM field bounds.
@@ -202,6 +231,9 @@ impl EepromReadField for EepromReadWriteField {
             Self::PairingByte => PAIRING_BYTE_BOUNDS,
             Self::PairingPin => PAIRING_PIN_BOUNDS,
             Self::PairingLongerCooldownByte => PAIRING_LONGER_COOLDOWN_BYTE_BOUNDS,
+            Self::FeatureOneSignedPackaged => FEATURE_ONE_SIGNED_PACKAGED_BOUNDS,
+            Self::FeatureTwoSignedPackaged => FEATURE_TWO_SIGNED_PACKAGED_BOUNDS,
+            Self::FeatureThreeSignedPackaged => FEATURE_THREE_SIGNED_PACKAGED_BOUNDS,
         }
     }
 }

@@ -4,8 +4,8 @@ use std::io::{Read, Write};
 use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
 
-use k256::SecretKey;
 use k256::pkcs8::EncodePublicKey;
+use k256::SecretKey;
 use ucsc_ectf_eeprom_layout::{
     EepromReadField, EepromReadOnlyField, EepromReadWriteField, SECRET_SIZE,
 };

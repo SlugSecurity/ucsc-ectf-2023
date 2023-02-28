@@ -9,8 +9,8 @@ pub use ucsc_ectf_eeprom_layout::EepromReadField;
 pub use ucsc_ectf_eeprom_layout::EepromReadOnlyField;
 pub use ucsc_ectf_eeprom_layout::EepromReadWriteField;
 pub use ucsc_ectf_eeprom_layout::{
-    BYTE_SIZE, CAR_ID_SIZE, MESSAGE_SIZE, PAIRING_PIN_SIZE, PUBLIC_KEY_SIZE, SECRET_SIZE,
-    SIGNATURE_SIZE,
+    BYTE_SIZE, CAR_ID_SIZE, MESSAGE_SIZE, PACKAGED_FEATURE_SIGNED_SIZE, PAIRING_PIN_SIZE,
+    PUBLIC_KEY_SIZE, SECRET_SIZE, SIGNATURE_SIZE,
 };
 
 /// The EEPROM controller. Holds a mutable reference to the EEPROM peripheral.
