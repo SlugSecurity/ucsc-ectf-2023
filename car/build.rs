@@ -4,8 +4,8 @@ use std::io::{Read, Write};
 use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
 
+use k256::ecdsa::SigningKey;
 use k256::pkcs8::EncodePublicKey;
-use k256::SecretKey;
 use ucsc_ectf_eeprom_layout::{
     EepromReadField, EepromReadOnlyField, EepromReadWriteField, SECRET_SIZE,
 };
@@ -67,8 +67,8 @@ fn main() {
         feature_signing_key_file
             .read_exact(&mut feature_signing_key_bytes)
             .unwrap();
-        let feature_signing_key = SecretKey::from_be_bytes(&feature_signing_key_bytes).unwrap();
-        let feature_verifying_key = feature_signing_key.public_key();
+        let feature_signing_key = SigningKey::from_bytes(&feature_signing_key_bytes).unwrap();
+        let feature_verifying_key = feature_signing_key.verifying_key();
         feature_verifying_key_file
             .write_all(
                 feature_verifying_key
