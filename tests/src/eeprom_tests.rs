@@ -18,8 +18,8 @@ const READ_ONLY_FIELDS: [EepromReadOnlyField; 9] = [
 ];
 
 const READ_WRITE_FIELDS: [EepromReadWriteField; 9] = [
-    EepromReadWriteField::UnlockKeyOne,
-    EepromReadWriteField::UnlockKeyTwo,
+    EepromReadWriteField::KeyFobEncryptionKey,
+    EepromReadWriteField::CarEncryptionKey,
     EepromReadWriteField::CarId,
     EepromReadWriteField::PairingByte,
     EepromReadWriteField::PairingPin,

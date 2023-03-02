@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{str, time::Duration};
 
 use clap::Parser;
 use ucsc_ectf_util_std::{
@@ -16,10 +16,7 @@ struct Args {
     car_bridge: u16,
 }
 
-fn get_unlock_message<'a>(
-    car_bridge: u16,
-    buff: &'a mut [u8],
-) -> communication::Result<UnlockMessage<'a>> {
+fn get_unlock_message(car_bridge: u16, buff: &mut [u8]) -> communication::Result<UnlockMessage> {
     let mut socket = VerifiedFramedTcpSocket::keyless_connect(("ectf-net", car_bridge))?;
     let mut timeout_timer = StdTimer::new(Duration::from_secs(5));
     let msg_len = socket.recv_with_data_timeout(buff, &mut timeout_timer)?;
@@ -46,9 +43,13 @@ fn main() {
         }
     };
 
-    println!("Unlock message: {}", msg.unlock_msg);
+    println!(
+        "Unlock message: {}",
+        str::from_utf8(msg.unlock_msg).expect("Unlock message is not a valid UTF-8 string.")
+    );
 
     for (idx, msg) in msg.feature_msgs.into_iter().enumerate() {
-        println!("Feature message #{}: {msg}", idx + 1);
+        let msg_str = str::from_utf8(msg).expect("Feature message is not a valid UTF-8 string.");
+        println!("Feature message #{}: {msg_str}", idx + 1);
     }
 }

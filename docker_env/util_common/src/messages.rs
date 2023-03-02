@@ -161,10 +161,10 @@ pub struct UnlockChallengeResponse<'a> {
 #[derive(Serialize, Deserialize)]
 pub struct UnlockMessage<'a> {
     /// The unlock secret for the car.
-    pub unlock_msg: &'a str,
+    pub unlock_msg: &'a [u8],
 
     /// The feature secrets for the enabled secrets on the car.
-    pub feature_msgs: heapless::Vec<&'a str, 3>,
+    pub feature_msgs: heapless::Vec<&'a [u8], 3>,
 }
 
 /// A message containing a signed packaged feature to enable a feature

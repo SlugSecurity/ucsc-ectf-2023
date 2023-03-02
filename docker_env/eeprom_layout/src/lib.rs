@@ -171,10 +171,10 @@ pub enum EepromReadOnlyField {
 pub enum EepromReadWriteField {
     /// The key used to facilitate encrypted communications from a paired key fob to a car during the
     /// unlock sequence.
-    UnlockKeyOne,
+    KeyFobEncryptionKey,
     /// The key used to facilitate encrypted communications from a car to a paired key fob during the
     /// unlock sequence.
-    UnlockKeyTwo,
+    CarEncryptionKey,
     /// The car ID.
     CarId,
     /// Whether or not a key fob is paired with a car.
@@ -225,8 +225,8 @@ impl EepromReadField for EepromReadOnlyField {
 impl EepromReadField for EepromReadWriteField {
     fn get_field_bounds(&self) -> EepromFieldBounds {
         match self {
-            Self::UnlockKeyOne => UNLOCK_KEY_ONE_BOUNDS,
-            Self::UnlockKeyTwo => UNLOCK_KEY_TWO_BOUNDS,
+            Self::KeyFobEncryptionKey => UNLOCK_KEY_ONE_BOUNDS,
+            Self::CarEncryptionKey => UNLOCK_KEY_TWO_BOUNDS,
             Self::CarId => CAR_ID_BOUNDS,
             Self::PairingByte => PAIRING_BYTE_BOUNDS,
             Self::PairingPin => PAIRING_PIN_BOUNDS,

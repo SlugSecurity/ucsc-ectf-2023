@@ -165,13 +165,13 @@ fn main() {
 
             eeprom_field_from_path(
                 &eeprom_file,
-                EepromReadWriteField::UnlockKeyOne,
+                EepromReadWriteField::KeyFobEncryptionKey,
                 format!("{secrets_dir}/UNLOCK_KEY_ONE"),
             );
 
             eeprom_field_from_path(
                 &eeprom_file,
-                EepromReadWriteField::UnlockKeyTwo,
+                EepromReadWriteField::CarEncryptionKey,
                 format!("{secrets_dir}/UNLOCK_KEY_TWO"),
             );
 
