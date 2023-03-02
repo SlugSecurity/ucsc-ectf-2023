@@ -5,10 +5,9 @@ use std::{
 };
 
 use clap::Parser;
-use ecdsa::signature::Signer;
-use k256::ecdsa::{Signature, SigningKey};
+use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use postcard::to_allocvec;
-use ucsc_ectf_util_std::messages::{PackagedFeatureUnsigned, PackagedFeatureSigned};
+use ucsc_ectf_util_std::messages::{PackagedFeatureSigned, PackagedFeatureUnsigned};
 
 #[derive(Parser)]
 struct Args {

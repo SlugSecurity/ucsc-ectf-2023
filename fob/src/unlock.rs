@@ -1,10 +1,10 @@
 use crate::{features, MAX_MESSAGE_SIZE};
-use core::{mem, time::Duration};
+use core::time::Duration;
 use ucsc_ectf_util_no_std::{
     communication::{CommunicationError, RxChannel, TxChannel},
     eeprom::{EepromReadWriteField, CAR_ID_SIZE, PACKAGED_FEATURE_SIGNED_SIZE, SECRET_SIZE},
     messages::{
-        heapless::Vec, FeatureNumber, Nonce, Uart1Message, UnlockChallengeResponse, UnlockRequest,
+        heapless::Vec, FeatureNumber, Uart1Message, UnlockChallengeResponse, UnlockRequest,
         NUM_FEATURES,
     },
     timer::Timer,

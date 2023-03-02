@@ -59,8 +59,5 @@ pub fn verify_packaged_feature_signed<'a>(
         return false;
     }
 
-    match packaged_feature.feature_number {
-        1..=3 => true,
-        _ => false,
-    }
+    matches!(packaged_feature.feature_number, 1..=3)
 }

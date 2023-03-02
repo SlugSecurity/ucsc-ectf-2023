@@ -4,9 +4,8 @@ use std::io::{Read, Write};
 use std::os::unix::fs::FileExt;
 use std::path::{Path, PathBuf};
 
-use ecdsa::signature::Signer;
 use hex::decode;
-use k256::ecdsa::{Signature, SigningKey};
+use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use k256::pkcs8::EncodePublicKey;
 use k256::SecretKey;
 use ucsc_ectf_eeprom_layout::{

@@ -24,7 +24,6 @@ ucsc-ectf-util-no-std = { path = "../docker_env/util_no_std" }
 zeroize = { version = "1.5.7", default-features = false }
 
 [build-dependencies]
-ecdsa = { version = "0.15.1", features = ["serde", "signing"] }
 k256 = { version = "0.12.0", features = ["ecdsa-core", "pem"] }
 ucsc-ectf-eeprom-layout = { path = "../docker_env/eeprom_layout" }
 
