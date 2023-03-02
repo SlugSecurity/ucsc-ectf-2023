@@ -26,20 +26,6 @@ where
     eeprom_file.write_all_at(&buf, offset).unwrap();
 }
 
-fn eeprom_field_from_path_optional<P, F>(eeprom_file: &File, field: F, path: P)
-where
-    P: AsRef<Path>,
-    F: EepromReadField,
-{
-    if let Ok(mut f) = File::open(path) {
-        let bounds = EepromReadField::get_field_bounds(&field);
-        let offset = bounds.address as u64;
-        let mut buf = vec![0u8; bounds.size];
-        f.read_exact(&mut buf).unwrap();
-        eeprom_file.write_all_at(&buf, offset).unwrap();
-    }
-}
-
 fn eeprom_field_from_buf<F>(eeprom_file: &File, field: F, buf: &[u8])
 where
     F: EepromReadField,
@@ -167,28 +153,28 @@ fn main() {
             format!("{secrets_dir}/SECRET_SEED"),
         );
 
-        eeprom_field_from_path_optional(
-            &eeprom_file,
-            EepromReadWriteField::UnlockKeyOne,
-            format!("{secrets_dir}/UNLOCK_KEY_ONE"),
-        );
-
-        eeprom_field_from_path_optional(
-            &eeprom_file,
-            EepromReadWriteField::UnlockKeyTwo,
-            format!("{secrets_dir}/UNLOCK_KEY_TWO"),
-        );
-
-        if let Some(car_id) = option_env!("CAR_ID") {
+        // Is paired key fob.
+        if let (Some(car_id), Some(pairing_pin)) = (option_env!("CAR_ID"), option_env!("PAIR_PIN"))
+        {
             let buf: u32 = car_id.parse().unwrap();
             eeprom_field_from_buf(
                 &eeprom_file,
                 EepromReadWriteField::CarId,
                 &buf.to_be_bytes(),
             );
-        }
 
-        if let Some(pairing_pin) = option_env!("PAIR_PIN") {
+            eeprom_field_from_path(
+                &eeprom_file,
+                EepromReadWriteField::UnlockKeyOne,
+                format!("{secrets_dir}/UNLOCK_KEY_ONE"),
+            );
+
+            eeprom_field_from_path(
+                &eeprom_file,
+                EepromReadWriteField::UnlockKeyTwo,
+                format!("{secrets_dir}/UNLOCK_KEY_TWO"),
+            );
+
             let buf = decode(pairing_pin).unwrap();
             eeprom_field_from_buf(&eeprom_file, EepromReadWriteField::PairingPin, &buf);
             eeprom_field_from_buf(&eeprom_file, EepromReadWriteField::PairingByte, &[1u8; 1]);
