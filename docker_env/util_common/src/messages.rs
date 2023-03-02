@@ -15,6 +15,9 @@ pub type FeatureNumber = u32;
 /// The type for a nonce/challenge.
 pub type Nonce = [u8; 16];
 
+/// The number of features.
+pub const NUM_FEATURES: usize = 3;
+
 /// This enum represents all possible messages that can be sent across UART0 between
 /// host tools and a car or a paired key fob.
 #[non_exhaustive]
@@ -119,7 +122,7 @@ pub struct UnlockChallenge {
 }
 
 /// A packaged feature, containing the Car ID and Feature Number.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PackagedFeatureUnsigned {
     /// The ID of the car this feature is meant for.
     pub car_id: CarId,
@@ -130,7 +133,7 @@ pub struct PackagedFeatureUnsigned {
 
 /// A signed packaged feature associated with the car it's tied to.
 /// The signature guarantees that it's not tampered with.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct PackagedFeatureSigned<'a> {
     /// The helper struct containing the Car ID and Feature Number.
     pub packaged_feature: PackagedFeatureUnsigned,
@@ -152,7 +155,7 @@ pub struct UnlockChallengeResponse<'a> {
 
     /// A list of features that are enabled for this car.
     #[serde(borrow)]
-    pub features: heapless::Vec<PackagedFeatureSigned<'a>, 3>,
+    pub features: heapless::Vec<PackagedFeatureSigned<'a>, NUM_FEATURES>,
 }
 
 /// The message containing the unlock secret and the feature secrets of any
@@ -164,7 +167,7 @@ pub struct UnlockMessage<'a> {
     pub unlock_msg: &'a [u8],
 
     /// The feature secrets for the enabled secrets on the car.
-    pub feature_msgs: heapless::Vec<&'a [u8], 3>,
+    pub feature_msgs: heapless::Vec<&'a [u8], NUM_FEATURES>,
 }
 
 /// A message containing a signed packaged feature to enable a feature

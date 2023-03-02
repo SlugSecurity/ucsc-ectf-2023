@@ -81,8 +81,10 @@ fn main() -> ! {
             features::paired_process_msg(&mut rt, &msg);
         }
 
-        // Process non-message events.
-
-        // TODO: Add check for button presses. Process accordingly.
+        // Process SW1 button press.
+        if rt.sw1_button_controller.poll_for_activation() {
+            unlock::process_button_press(&mut rt);
+            rt.sw1_button_controller.clear_activation();
+        }
     }
 }

@@ -29,10 +29,10 @@ use tm4c123x_hal::{
 const BPS: u32 = 57600;
 
 /// The TX pin for UART 1.
-type Uart1TxPin = PB1<AlternateFunction<AF1, PullUp>>;
+pub type Uart1TxPin = PB1<AlternateFunction<AF1, PullUp>>;
 
 /// The RX pin for UART 1.
-type Uart1RxPin = PB0<AlternateFunction<AF1, PushPull>>;
+pub type Uart1RxPin = PB0<AlternateFunction<AF1, PushPull>>;
 
 /// The runtime struct.
 pub struct Runtime<'a> {
