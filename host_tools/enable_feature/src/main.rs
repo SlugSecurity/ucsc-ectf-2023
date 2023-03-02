@@ -20,7 +20,10 @@ struct Args {
     package_name: String,
 }
 
-fn get_package(name: String, package_vec: &mut Vec<u8>) -> Result<PackagedFeatureSigned, Box<dyn Error>> {
+fn get_package(
+    name: String,
+    package_vec: &mut Vec<u8>,
+) -> Result<PackagedFeatureSigned, Box<dyn Error>> {
     let mut path = PathBuf::from("/package_dir");
     path.push(name);
 
@@ -41,7 +44,7 @@ fn send_package(package: PackagedFeatureSigned, port: u16) -> communication::Res
     socket.send(&mut enable_req_bytes)?;
 
     let mut buff = [0; RECV_BUFF_LEN];
-    let mut timeout_timer = StdTimer::new(Duration::from_secs(5));
+    let mut timeout_timer = StdTimer::new(Duration::from_millis(4950));
     let resp_len = socket.recv_with_data_timeout(&mut buff, &mut timeout_timer)?;
     let resp = postcard::from_bytes::<Uart0Message>(&buff[..resp_len])
         .map_err(|_| CommunicationError::RecvError)?;

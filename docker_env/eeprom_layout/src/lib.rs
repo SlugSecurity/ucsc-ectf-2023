@@ -63,21 +63,21 @@ const SECRET_SEED_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     size: SECRET_SIZE,
 };
 
-/// The bounds of the unlock key 1 EEPROM field.
-const UNLOCK_KEY_ONE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+/// The bounds of the key fob encryption key (unlock key 1) EEPROM field.
+const KEY_FOB_ENCRYPTION_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     address: SECRET_SEED_BOUNDS.address + SECRET_SEED_BOUNDS.size,
     size: SECRET_SIZE,
 };
 
-/// The bounds of the unlock key 2 EEPROM field.
-const UNLOCK_KEY_TWO_BOUNDS: EepromFieldBounds = EepromFieldBounds {
-    address: UNLOCK_KEY_ONE_BOUNDS.address + UNLOCK_KEY_ONE_BOUNDS.size,
+/// The bounds of the car encryption key (unlock key 2) EEPROM field.
+const CAR_ENCRYPTION_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+    address: KEY_FOB_ENCRYPTION_KEY_BOUNDS.address + KEY_FOB_ENCRYPTION_KEY_BOUNDS.size,
     size: SECRET_SIZE,
 };
 
 /// The bounds of the car ID EEPROM field.
 const CAR_ID_BOUNDS: EepromFieldBounds = EepromFieldBounds {
-    address: UNLOCK_KEY_TWO_BOUNDS.address + UNLOCK_KEY_TWO_BOUNDS.size,
+    address: CAR_ENCRYPTION_KEY_BOUNDS.address + CAR_ENCRYPTION_KEY_BOUNDS.size,
     size: CAR_ID_SIZE,
 };
 
@@ -225,8 +225,8 @@ impl EepromReadField for EepromReadOnlyField {
 impl EepromReadField for EepromReadWriteField {
     fn get_field_bounds(&self) -> EepromFieldBounds {
         match self {
-            Self::KeyFobEncryptionKey => UNLOCK_KEY_ONE_BOUNDS,
-            Self::CarEncryptionKey => UNLOCK_KEY_TWO_BOUNDS,
+            Self::KeyFobEncryptionKey => KEY_FOB_ENCRYPTION_KEY_BOUNDS,
+            Self::CarEncryptionKey => CAR_ENCRYPTION_KEY_BOUNDS,
             Self::CarId => CAR_ID_BOUNDS,
             Self::PairingByte => PAIRING_BYTE_BOUNDS,
             Self::PairingPin => PAIRING_PIN_BOUNDS,

@@ -1,7 +1,13 @@
 //! This module is responsible for providing [`serde`] serializable/deserializable structs
 //! for messages sent between the car, key fob, and host tools.
 
+use k256::{
+    ecdsa::{signature::Verifier, Signature, VerifyingKey},
+    elliptic_curve::sec1::FromEncodedPoint,
+    EncodedPoint, PublicKey,
+};
 use serde::{Deserialize, Serialize};
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 pub use chacha20poly1305::Key;
 pub use heapless;
@@ -177,7 +183,7 @@ pub struct EnableFeatureMessage<'a>(#[serde(borrow)] pub PackagedFeatureSigned<'
 
 /// A struct containing the pairing pin needed to initiate a pairing
 /// sequence.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Zeroize, ZeroizeOnDrop)]
 pub struct PairingPin(pub u32);
 
 /// An acknowledgement to a request sent by a host tool.
@@ -194,6 +200,21 @@ pub struct VerifiedPublicKey<'a> {
 
     /// The signature authenticating ``public_key`` in DER format.
     pub public_key_signature: &'a [u8],
+}
+
+impl VerifiedPublicKey<'_> {
+    /// Verifies and gets the public key.
+    pub fn verify_and_get_key(&self, verifying_key: &VerifyingKey) -> Option<PublicKey> {
+        // Verify key.
+        let public_key_signature = Signature::from_der(self.public_key_signature).ok()?;
+
+        verifying_key
+            .verify(self.public_key, &public_key_signature)
+            .ok()?;
+
+        // Get key.
+        PublicKey::from_encoded_point(&EncodedPoint::from_bytes(self.public_key).ok()?).into()
+    }
 }
 
 /// A message containing the public key associated with the ephemeral secret and a
@@ -233,7 +254,7 @@ pub struct PairingChallenge {
 /// The response to send for a [`PairingChallenge`]. It contains the [`Nonce`]
 /// from the challenge to prevent replay attacks. See the fields of this struct
 /// for more information.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Zeroize, ZeroizeOnDrop)]
 pub struct PairingChallengeResponse {
     /// The [`Nonce`] sent in the original [`PairingRequest`] to the
     /// unpaired key fob.
