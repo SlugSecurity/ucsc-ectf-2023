@@ -4,15 +4,13 @@ stages:
   - ectf_tools
   - deploy
 
-before_script:
+.build_ci_podman: &build_ci_podman
   - podman build -f Dockerfile.CI --tag gitlab_runner .
-  - python3 -m venv /tmp/gitlab_runner
-  - source /tmp/gitlab_runner/bin/activate
-  - git clone https://github.com/mitre-cyber-academy/2023-ectf-tools /tmp/ectf_tools || true
-  - flock /tmp/ectf_tools pip install -e /tmp/ectf_tools
 
 lint:
   stage: lint
+  before_script:
+    - *build_ci_podman
   script:
     - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && cargo clippy -- -D warnings'
   allow_failure: true
@@ -23,6 +21,8 @@ lint:
 
 lint-host-tools:
   stage: lint
+  before_script:
+    - *build_ci_podman
   script:
     - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt/host_tools && cargo clippy -- -D warnings'
   allow_failure: true
@@ -33,6 +33,8 @@ lint-host-tools:
 
 lint-pedantic:
   stage: lint
+  before_script:
+    - *build_ci_podman
   script:
     - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && cargo clippy -- -W clippy::pedantic; cd host_tools && cargo clippy -- -W clippy::pedantic'
   cache:
@@ -43,6 +45,8 @@ lint-pedantic:
 build:
   stage: build
   needs: []
+  before_script:
+    - *build_ci_podman
   script:
     - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && CARGO_HOME=output/cache cargo build --release; cd host_tools && CARGO_HOME=output/cache cargo build --release'
   artifacts:
@@ -58,6 +62,11 @@ build:
 ectf_tools:
   stage: ectf_tools
   needs: [build]
+  before_script:
+    - python3 -m venv /tmp/gitlab_runner
+    - source /tmp/gitlab_runner/bin/activate
+    - git clone https://github.com/mitre-cyber-academy/2023-ectf-tools /tmp/ectf_tools || git -C /tmp/ectf_tools pull || true
+    - flock /tmp/ectf_tools pip install -e /tmp/ectf_tools
   script:
     - podman container prune -f || true
     - podman build -f docker_env/build_image.Dockerfile --tag ectf:ectf --cgroup-manager=cgroupfs docker_env/
@@ -76,12 +85,44 @@ ectf_tools:
 
 pages:
   stage: deploy
+  needs: [build]
   environment: docs
+  before_script:
+    - *build_ci_podman
   script:
     - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && mkdir public && cargo doc --no-deps --document-private-items && cp -r target/thumbv7em-none-eabihf/doc public/privateapi && cargo doc --no-deps && cp -r target/thumbv7em-none-eabihf/doc public/publicapi'
   artifacts:
     paths:
       - public
     expire_in: 1 day
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+mirror:
+  stage: deploy
+  needs: [ectf_tools]
+  variables:
+    BLACKLISTED_FILES: ".cargo .vscode docker_env/util_std/.cargo finding_friends tests .clang-format .gitlab-ci.yml Cargo.lock Cargo.toml CONTRIBUTING.md Dockerfile Dockerfile.CI *.nu *.sh"
+    GIT_USER_NAME: "Brian Mak"
+    GIT_USER_EMAIL: "brmak@ucsc.edu"
+  before_script:
+    - git fetch --unshallow origin
+  script:
+    - rm -rf $BLACKLISTED_FILES
+    - mv README_PUBLIC.md README.md
+    - git add -A
+    - rm -f .gitignore docker_env/util_std/.gitignore
+    - git add .gitignore docker_env/util_std/.gitignore
+    - git config user.name "$GIT_USER_NAME"
+    - git config user.email "$GIT_USER_EMAIL"
+    - git commit -m "Remove blacklisted files"
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo "$GITLAB_DEPLOY_KEY_B64" | base64 -d > ~/.ssh/id_rsa.gitlab
+    - chmod 700 ~/.ssh/id_rsa.gitlab
+    - ssh-keyscan "$GITLAB_HOSTNAME" > ~/.ssh/known_hosts.gitlab
+    - echo "$GITLAB_SSH_CONFIG_B64" | base64 -d > ~/.ssh/config_gitlab
+    - git remote add gitlab git@gitlab:ucsc-ectf-2023/ucsc-ectf-2023.git || true
+    - GIT_SSH_COMMAND="ssh -F ~/.ssh/config_gitlab -o UserKnownHostsFile=~/.ssh/known_hosts.gitlab" git push --force gitlab HEAD:refs/heads/main
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
