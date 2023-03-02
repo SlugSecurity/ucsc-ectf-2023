@@ -62,6 +62,7 @@ build:
 ectf_tools:
   stage: ectf_tools
   needs: [build]
+  resource_group: ectf_tools
   before_script:
     - python3 -m venv /tmp/gitlab_runner
     - source /tmp/gitlab_runner/bin/activate
