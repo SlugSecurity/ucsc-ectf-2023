@@ -9,3 +9,6 @@ target/
 # C
 *.o
 *.a
+
+# GitLab CI
+output/

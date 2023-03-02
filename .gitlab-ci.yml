@@ -12,35 +12,35 @@ lint:
   before_script:
     - *build_ci_podman
   script:
-    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && cargo clippy -- -D warnings'
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && CARGO_HOME=cache cargo clippy -- -D warnings'
   allow_failure: true
   cache:
     key: cache
     paths:
-      - output/cache
+      - cache
 
 lint-host-tools:
   stage: lint
   before_script:
     - *build_ci_podman
   script:
-    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt/host_tools && cargo clippy -- -D warnings'
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt/host_tools && CARGO_HOME=../cache cargo clippy -- -D warnings'
   allow_failure: true
   cache:
     key: cache
     paths:
-      - output/cache
+      - cache
 
 lint-pedantic:
   stage: lint
   before_script:
     - *build_ci_podman
   script:
-    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && cargo clippy -- -W clippy::pedantic; cd host_tools && cargo clippy -- -W clippy::pedantic'
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && CARGO_HOME=cache cargo clippy -- -W clippy::pedantic; cd host_tools && CARGO_HOME=../cache cargo clippy -- -W clippy::pedantic'
   cache:
     key: cache
     paths:
-      - output/cache
+      - cache
 
 build:
   stage: build
@@ -48,7 +48,7 @@ build:
   before_script:
     - *build_ci_podman
   script:
-    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && CARGO_HOME=output/cache cargo build --release; cd host_tools && CARGO_HOME=output/cache cargo build --release'
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && CARGO_HOME=cache cargo build --release; cd host_tools && CARGO_HOME=../cache cargo build --release'
   artifacts:
     paths:
       - target/thumbv7em-none-eabihf/release
@@ -57,7 +57,7 @@ build:
   cache:
     key: cache
     paths:
-      - output/cache
+      - cache
 
 ectf_tools:
   stage: ectf_tools
@@ -69,17 +69,17 @@ ectf_tools:
     - flock /tmp/ectf_tools pip install -e /tmp/ectf_tools
   script:
     - podman container prune -f || true
+    - echo "ENV CARGO_HOME=/dev_out/cache" >> docker_env/build_image.Dockerfile
     - podman build -f docker_env/build_image.Dockerfile --tag ectf:ectf --cgroup-manager=cgroupfs docker_env/
     - ectf_tools build.tools --design . --name ectf
     - ectf_tools build.depl --design . --name ectf --deployment a
     - ectf_tools build.fob --design . --name ectf --deployment a --fob-name fob1 --fob-out output
-    - ectf_tools build.car_fob_pair --design . --name ectf --deployment a --car-name car --fob-name fob0 --car-out output --fob-out output --car-id 256 --pair-pin cafebe --car-unlock-secret 'unlock' --car-feature1-secret 'feature1' --car-feature2-secret 'feature2' --car-feature3-secret 'feature3'
+    - ectf_tools build.car_fob_pair --design . --name ectf --deployment a --car-name car --fob-name fob0 --car-out output --fob-out output --car-id 255 --pair-pin cafebe --car-unlock-secret 'unlock' --car-feature1-secret 'feature1' --car-feature2-secret 'feature2' --car-feature3-secret 'feature3'
   artifacts:
     paths:
       - output/*.*
     expire_in: 1 day
   cache:
-    key: cache
     paths:
       - output/cache/**
 
@@ -90,11 +90,15 @@ pages:
   before_script:
     - *build_ci_podman
   script:
-    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && mkdir public && cargo doc --no-deps --document-private-items && cp -r target/thumbv7em-none-eabihf/doc public/privateapi && cargo doc --no-deps && cp -r target/thumbv7em-none-eabihf/doc public/publicapi'
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && mkdir public && CARGO_HOME=cache cargo doc --no-deps --document-private-items && cp -r target/thumbv7em-none-eabihf/doc public/privateapi && CARGO_HOME=cache cargo doc --no-deps && cp -r target/thumbv7em-none-eabihf/doc public/publicapi'
   artifacts:
     paths:
       - public
     expire_in: 1 day
+  cache:
+    key: cache
+    paths:
+      - cache
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
 
@@ -102,7 +106,7 @@ mirror:
   stage: deploy
   needs: [ectf_tools]
   variables:
-    BLACKLISTED_FILES: ".cargo .vscode docker_env/util_std/.cargo finding_friends tests .clang-format .gitlab-ci.yml Cargo.lock Cargo.toml CONTRIBUTING.md Dockerfile Dockerfile.CI *.nu *.sh"
+    BLACKLISTED_FILES: ".cargo .vscode docker_env/util_std/.cargo finding_friends tests .clang-format .gdbinit .gitlab-ci.yml Cargo.lock Cargo.toml CONTRIBUTING.md Dockerfile Dockerfile.CI *.nu *.sh"
     GIT_USER_NAME: "Brian Mak"
     GIT_USER_EMAIL: "brmak@ucsc.edu"
   before_script:
