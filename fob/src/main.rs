@@ -11,7 +11,7 @@ use cortex_m_rt::entry;
 use tm4c123x_hal::{CorePeripherals, Peripherals};
 use ucsc_ectf_util_no_std::{
     communication::RxChannel,
-    eeprom::{EepromReadWriteField, BYTE_SIZE},
+    eeprom::{EepromReadWriteField, BYTE_FIELD_SIZE},
     messages::Uart0Message,
     Runtime, RuntimePeripherals,
 };
@@ -53,7 +53,7 @@ fn main() -> ! {
     );
 
     // Get pairing status.
-    let mut pairing_byte = [0; BYTE_SIZE];
+    let mut pairing_byte = [0; BYTE_FIELD_SIZE];
 
     rt.eeprom_controller
         .read_slice(EepromReadWriteField::PairingByte, &mut pairing_byte)

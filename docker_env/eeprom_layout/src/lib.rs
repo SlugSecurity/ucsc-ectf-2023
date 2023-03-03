@@ -24,8 +24,8 @@ pub const MESSAGE_SIZE: usize = 64;
 /// The size of the car ID. 32 bits = 4 bytes.
 pub const CAR_ID_SIZE: usize = 4;
 
-/// The size of a byte.
-pub const BYTE_SIZE: usize = 1;
+/// The size of a byte. Deal with it.
+pub const BYTE_FIELD_SIZE: usize = 4;
 
 /// The size of the pairing PIN.
 pub const PAIRING_PIN_SIZE: usize = 4;
@@ -84,26 +84,24 @@ const CAR_ID_BOUNDS: EepromFieldBounds = EepromFieldBounds {
 /// The bounds of the pairing byte EEPROM field.
 const PAIRING_BYTE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     address: CAR_ID_BOUNDS.address + CAR_ID_BOUNDS.size,
-    size: BYTE_SIZE,
+    size: BYTE_FIELD_SIZE,
 };
 
 /// The bounds of the pairing PIN EEPROM field.
 const PAIRING_PIN_BOUNDS: EepromFieldBounds = EepromFieldBounds {
-    address: PAIRING_BYTE_BOUNDS.address + PAIRING_BYTE_BOUNDS.size + 3, // 3 bytes of padding for word alignment.
+    address: PAIRING_BYTE_BOUNDS.address + PAIRING_BYTE_BOUNDS.size,
     size: PAIRING_PIN_SIZE,
 };
 
 /// The bounds of the pairing longer cooldown byte EEPROM field.
 const PAIRING_LONGER_COOLDOWN_BYTE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     address: PAIRING_PIN_BOUNDS.address + PAIRING_PIN_BOUNDS.size,
-    size: BYTE_SIZE,
+    size: BYTE_FIELD_SIZE,
 };
 
 /// The bounds of the feature one signed packaged feature EEPROM field.
 const FEATURE_ONE_SIGNED_PACKAGED_BOUNDS: EepromFieldBounds = EepromFieldBounds {
-    address: PAIRING_LONGER_COOLDOWN_BYTE_BOUNDS.address
-        + PAIRING_LONGER_COOLDOWN_BYTE_BOUNDS.size
-        + 3, // 3 bytes of padding for word alignment.
+    address: PAIRING_LONGER_COOLDOWN_BYTE_BOUNDS.address + PAIRING_LONGER_COOLDOWN_BYTE_BOUNDS.size,
     size: PACKAGED_FEATURE_SIGNED_SIZE,
 };
 

@@ -9,7 +9,7 @@ use k256::ecdsa::{signature::Signer, Signature, SigningKey};
 use k256::pkcs8::EncodePublicKey;
 use k256::SecretKey;
 use ucsc_ectf_eeprom_layout::{
-    EepromReadField, EepromReadOnlyField, EepromReadWriteField, SECRET_SIZE,
+    EepromReadField, EepromReadOnlyField, EepromReadWriteField, BYTE_FIELD_SIZE, SECRET_SIZE,
 };
 
 fn eeprom_field_from_path<P, F>(eeprom_file: &File, field: F, path: P)
@@ -182,7 +182,11 @@ fn main() {
 
             let buf = decode(pairing_pin).unwrap();
             eeprom_field_from_buf(&eeprom_file, EepromReadWriteField::PairingPin, &buf);
-            eeprom_field_from_buf(&eeprom_file, EepromReadWriteField::PairingByte, &[1u8; 1]);
+            eeprom_field_from_buf(
+                &eeprom_file,
+                EepromReadWriteField::PairingByte,
+                &[1u8; BYTE_FIELD_SIZE],
+            );
         }
 
         println!("cargo:rerun-if-changed={secrets_dir}");

@@ -2,7 +2,7 @@ use crate::MAX_MESSAGE_SIZE;
 use core::{mem, time::Duration};
 use ucsc_ectf_util_no_std::{
     communication::{CommunicationError, RxChannel, TxChannel},
-    eeprom::{EepromReadWriteField, CAR_ID_SIZE, PAIRING_PIN_SIZE, SECRET_SIZE},
+    eeprom::{EepromReadWriteField, BYTE_FIELD_SIZE, CAR_ID_SIZE, PAIRING_PIN_SIZE, SECRET_SIZE},
     messages::{
         Nonce, PairingChallenge, PairingChallengeResponse, PairingPin, PairingRequest, Uart1Message,
     },
@@ -153,7 +153,7 @@ fn turn_unpaired_to_paired(rt: &mut Runtime, challenge_response_msg: &PairingCha
         )
         .expect("EEPROM write failed: pairing PIN.");
 
-    let pairing_byte = [1];
+    let pairing_byte = [1u8; BYTE_FIELD_SIZE];
     rt.eeprom_controller
         .write_slice(EepromReadWriteField::PairingByte, &pairing_byte)
         .expect("EEPROM write failed: pairing byte.");

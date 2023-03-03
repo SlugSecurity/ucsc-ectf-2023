@@ -1,6 +1,6 @@
 use core::time::Duration;
 use ucsc_ectf_util_no_std::{
-    eeprom::{EepromReadWriteField, BYTE_SIZE, PAIRING_PIN_SIZE},
+    eeprom::{EepromReadWriteField, BYTE_FIELD_SIZE, PAIRING_PIN_SIZE},
     messages::Uart0Message,
     timer::Timer,
     Runtime,
@@ -28,7 +28,7 @@ pub(crate) fn unpaired_listen_and_pair(rt: &mut Runtime) {
 /// Checks a pairing PIN with a cooldown if the PIN is incorrect.
 fn check_pin_attempt(rt: &mut Runtime, pairing_pin_attempt: u32) -> bool {
     // Check pairing longer cooldown byte and create cooldown timer.
-    let mut pairing_longer_cooldown_byte = [0; BYTE_SIZE];
+    let mut pairing_longer_cooldown_byte = [0; BYTE_FIELD_SIZE];
     rt.eeprom_controller
         .read_slice(
             EepromReadWriteField::PairingLongerCooldownByte,
@@ -36,9 +36,9 @@ fn check_pin_attempt(rt: &mut Runtime, pairing_pin_attempt: u32) -> bool {
         )
         .expect("EEPROM read failed: pairing longer cooldown byte.");
 
-    let mut pin_cooldown_timer = match pairing_longer_cooldown_byte {
-        [0] => rt.hib_controller.create_timer(Duration::from_millis(900)),
-        [1] => rt.hib_controller.create_timer(Duration::from_millis(4900)),
+    let mut pin_cooldown_timer = match pairing_longer_cooldown_byte[0] {
+        0 => rt.hib_controller.create_timer(Duration::from_millis(900)),
+        1 => rt.hib_controller.create_timer(Duration::from_millis(4900)),
         _ => panic!("Invalid pairing longer cooldown byte."),
     };
 
@@ -56,8 +56,8 @@ fn check_pin_attempt(rt: &mut Runtime, pairing_pin_attempt: u32) -> bool {
     if !pairing_pin_correct {
         while !pin_cooldown_timer.poll() {}
 
-        if pairing_longer_cooldown_byte == [0] {
-            pairing_longer_cooldown_byte = [1];
+        if pairing_longer_cooldown_byte[0] == 0 {
+            pairing_longer_cooldown_byte = [1u8; BYTE_FIELD_SIZE];
             rt.eeprom_controller
                 .write_slice(
                     EepromReadWriteField::PairingLongerCooldownByte,
@@ -70,8 +70,8 @@ fn check_pin_attempt(rt: &mut Runtime, pairing_pin_attempt: u32) -> bool {
     }
 
     // PIN is correct. Reset longer cooldown timer.
-    if pairing_longer_cooldown_byte == [1] {
-        pairing_longer_cooldown_byte = [0];
+    if pairing_longer_cooldown_byte[0] == 1 {
+        pairing_longer_cooldown_byte = [0u8; BYTE_FIELD_SIZE];
         rt.eeprom_controller
             .write_slice(
                 EepromReadWriteField::PairingLongerCooldownByte,
