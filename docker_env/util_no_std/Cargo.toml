@@ -8,14 +8,13 @@ license = "MIT"
 
 [dependencies]
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
-cortex-m-rt = "0.7.2"
-cortex-m-semihosting = "0.5.0"
+cortex-m-rt = "0.7.3"
 tm4c123x-hal = { version = "0.10.2", features = ["rt"] }
 ucsc-ectf-eeprom-layout = { path = "../eeprom_layout" }
 chacha20poly1305 = { version = "0.10.1", default-features = false, features = ["heapless"] }
 sha3 = { version = "0.10.6", default-features = false }
 rand_chacha = { version = "0.3.1", default-features = false }
-once_cell = { version = "1.17.0", default-features = false, features = ["critical-section"] }
+once_cell = { version = "1.17.1", default-features = false, features = ["critical-section"] }
 bitvec = { version = "1.0.1", default-features = false }
 zeroize = { version = "1.5.7", default-features = false }
 ucsc-ectf-util-common = { path = "../util_common" }
