@@ -150,7 +150,7 @@ impl<'a> EepromController<'a> {
 
         for i in 0..word_count {
             // Read the word and increment offset.
-            let word = self.eeprom.eerdwrinc.read().bits().to_be_bytes();
+            let word = self.eeprom.eerdwrinc.read().bits().to_le_bytes();
 
             // On last word and the field size is not a multiple of a word size.
             if (i == (word_count - 1)) && ((field_bounds.size % Self::BYTES_PER_WORD) != 0) {
@@ -203,30 +203,30 @@ impl<'a> EepromController<'a> {
             // On last word and the field size is not a multiple of a word size.
             if (i == (word_count - 1)) && ((field_bounds.size % Self::BYTES_PER_WORD) != 0) {
                 // Grab existing word without incrementing offset.
-                let existing_word = self.eeprom.eerdwr.read().bits().to_be_bytes();
+                let existing_word = self.eeprom.eerdwr.read().bits().to_le_bytes();
 
                 // Copy the partial word to the write register.
                 self.eeprom.eerdwrinc.write(|w| {
-                    let mut word_be_bytes = [0; Self::BYTES_PER_WORD];
+                    let mut word_le_bytes = [0; Self::BYTES_PER_WORD];
                     let bytes_left = field_bounds.size % Self::BYTES_PER_WORD;
 
                     // Copy bytes from the source buffer.
-                    word_be_bytes[..bytes_left]
+                    word_le_bytes[..bytes_left]
                         .copy_from_slice(&src[i * Self::BYTES_PER_WORD..field_bounds.size]);
 
                     // Copy bytes from the existing word.
-                    word_be_bytes[bytes_left..].copy_from_slice(&existing_word[bytes_left..]);
+                    word_le_bytes[bytes_left..].copy_from_slice(&existing_word[bytes_left..]);
 
                     // SAFETY: Writing to this register is safe because it is data-race free. This
                     // guarantee comes from the fact that the EEPROM is borrowed mutably.
-                    unsafe { w.bits(u32::from_be_bytes(word_be_bytes)) }
+                    unsafe { w.bits(u32::from_le_bytes(word_le_bytes)) }
                 });
             } else {
                 // Copy the full word to the write register.
                 // SAFETY: Writing to this register is safe because it is data-race free. This
                 // guarantee comes from the fact that the EEPROM is borrowed mutably.
                 self.eeprom.eerdwrinc.write(|w| unsafe {
-                    w.bits(u32::from_be_bytes(
+                    w.bits(u32::from_le_bytes(
                         src[(i * Self::BYTES_PER_WORD)..((i + 1) * Self::BYTES_PER_WORD)]
                             .try_into()
                             .unwrap(),
@@ -277,7 +277,7 @@ impl<'a> EepromController<'a> {
 
         for i in 0..word_count {
             // Read the word and increment offset.
-            let word = self.eeprom.eerdwrinc.read().bits().to_be_bytes();
+            let word = self.eeprom.eerdwrinc.read().bits().to_le_bytes();
 
             // Copy the full word to the destination buffer.
             dest[(i * Self::BYTES_PER_WORD)..((i + 1) * Self::BYTES_PER_WORD)]
