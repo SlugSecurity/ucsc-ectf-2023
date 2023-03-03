@@ -837,10 +837,8 @@ version = "0.1.0"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
- "cortex-m-semihosting",
  "k256",
  "panic-halt",
- "panic-semihosting",
  "postcard",
  "tm4c123x-hal",
  "ucsc-ectf-eeprom-layout",
@@ -858,11 +856,9 @@ version = "0.1.0"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
- "cortex-m-semihosting",
  "hex",
  "k256",
  "panic-halt",
- "panic-semihosting",
  "postcard",
  "tm4c123x-hal",
  "ucsc-ectf-eeprom-layout",

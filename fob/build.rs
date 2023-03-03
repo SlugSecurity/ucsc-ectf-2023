@@ -47,6 +47,12 @@ fn main() {
         .write_all(include_bytes!("memory.x"))
         .unwrap();
 
+    // Put the link.x linker script somewhere the linker can find it.
+    File::create(out.join("link.x"))
+        .unwrap()
+        .write_all(include_bytes!("link.x"))
+        .unwrap();
+
     if let Some(secrets_dir) = option_env!("SECRETS_DIR") {
         let mut pairing_signing_key_file =
             File::open(format!("{secrets_dir}/PAIRING_SIGNING_KEY")).unwrap();
@@ -182,7 +188,8 @@ fn main() {
         println!("cargo:rerun-if-changed={secrets_dir}");
     }
 
-    // Only re-run the build script when this file or memory.x is changed.
+    // Only re-run the build script when this file, memory.x, or link.x is changed.
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed=memory.x");
+    println!("cargo:rerun-if-changed=link.x");
 }

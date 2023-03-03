@@ -14,10 +14,8 @@ strip = true
 
 [dependencies]
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
-cortex-m-rt = "0.7.2"
-cortex-m-semihosting = "0.5.0"
+cortex-m-rt = { version = "0.7.3", features = ["set-sp", "set-vtor"] }
 panic-halt = "0.2.0"
-panic-semihosting = { version = "0.6.0", optional = true }
 postcard = { version = "1.0.4", default-features = false }
 tm4c123x-hal = { version = "0.10.2", features = ["rt"] }
 ucsc-ectf-util-no-std = { path = "../docker_env/util_no_std" }

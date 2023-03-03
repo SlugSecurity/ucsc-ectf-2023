@@ -4,15 +4,10 @@
 #![no_main]
 #![no_std]
 
-#[cfg(feature = "panic-semihosting")]
-extern crate panic_semihosting;
-
-#[cfg(not(feature = "panic-semihosting"))]
 extern crate panic_halt;
 
-use core::{fmt::Write, time::Duration};
+use core::{arch::global_asm, time::Duration};
 use cortex_m_rt::entry;
-use cortex_m_semihosting::hio;
 use tm4c123x_hal::{CorePeripherals, Peripherals};
 use ucsc_ectf_util_no_std::{
     communication::RxChannel,
@@ -31,12 +26,20 @@ pub const MAX_MESSAGE_SIZE: usize = 1024;
 const UNPAIRED: u8 = 0;
 const MS_TO_WAIT_FOR_MSG: u64 = 5;
 
+// Jumps to the reset handler. This is used to allow the bootloader to execute our code.
+global_asm!(
+    r#"
+.pushsection .text_jump, "ax"
+
+jump_to_reset:
+    b Reset
+
+.popsection
+"#
+);
+
 #[entry]
 fn main() -> ! {
-    // Start message.
-    let mut stdout = hio::hstdout().unwrap();
-    write!(stdout, "Starting firmware!").unwrap();
-
     // Grab peripherals.
     let core_peripherals = CorePeripherals::take().unwrap();
     let peripherals = Peripherals::take().unwrap();
