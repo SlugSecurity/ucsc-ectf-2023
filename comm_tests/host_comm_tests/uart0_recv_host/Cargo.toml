@@ -1,0 +1,11 @@
+[package]
+name = "ucsc-ectf-uart0-recv-host"
+version = "0.1.0"
+edition = "2021"
+authors = ["2023 UCSC eCTF Team"]
+categories = ["embedded", "no-std"]
+license = "MIT"
+
+[dependencies]
+ucsc-ectf-comm-tests-common = { path = "../../common" }
+ucsc-ectf-util-std = { path = "../../../docker_env/util_std" }

@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "uart0_recv_host",
+    "uart0_send_host"
+]
+resolver = "2"

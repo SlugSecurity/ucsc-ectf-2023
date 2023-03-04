@@ -1,24 +1,19 @@
 [workspace]
 members = [
-    "car",
-    "docker_env/eeprom_layout",
-    "fob",
-    "docker_env/util_common",
-    "docker_env/util_no_std",
-    "tests",
-    "finding_friends/friendly_ping",
-    "finding_friends/friendly_pong",
-]
-exclude = [
-    "docker_env/util_std",
-    "host_tools/*",
-    "comm_tests/*"
+    "uart1_send_board",
+    "uart1_recv_board",
+    "uart0_recv_board",
+    "uart0_send_board",
+    "common"
 ]
 resolver = "2"
 
+exclude = [
+    "host_comm_tests/*"
+]
+
 [profile.dev]
 opt-level = "z"
-lto = true
 codegen-units = 1
 
 [profile.release]

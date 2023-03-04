@@ -12,6 +12,7 @@ use chacha20poly1305::Key;
 use tm4c123x_hal::{
     delay::Delay,
     gpio::{
+        gpioa::{PA0, PA1},
         gpiob::{PB0, PB1},
         gpiof::PF4,
         AlternateFunction, GpioExt, Input, PullUp, PushPull, AF1,
@@ -26,7 +27,13 @@ use tm4c123x_hal::{
 };
 
 /// Bits-per-second for UART communications.
-const BPS: u32 = 57600;
+const BPS: u32 = 115200;
+
+/// The TX pin for UART 0.
+pub type Uart0TxPin = PA1<AlternateFunction<AF1, PullUp>>;
+
+/// The RX pin for UART 0.
+pub type Uart0RxPin = PA0<AlternateFunction<AF1, PushPull>>;
 
 /// The TX pin for UART 1.
 pub type Uart1TxPin = PB1<AlternateFunction<AF1, PullUp>>;
@@ -46,7 +53,7 @@ pub struct Runtime<'a> {
     pub sw1_button_controller: Sw1ButtonController<'a>,
 
     /// The controller for UART0. See the documentation for [`Uart0Controller`] for more details.
-    pub uart0_controller: Uart0Controller<'a, (), ()>,
+    pub uart0_controller: Uart0Controller<'a, Uart0TxPin, Uart0RxPin>,
 
     /// The controller for UART1. See the documentation for [`Uart1Controller`] for more details.
     pub uart1_controller: Uart1Controller<'a, Uart1TxPin, Uart1RxPin>,
@@ -158,7 +165,6 @@ pub struct RuntimePeripherals {
     pub tpiu: TPIU,
     pub watchdog0: WATCHDOG0,
     pub watchdog1: WATCHDOG1,
-    pub gpio_porta: GPIO_PORTA,
     pub gpio_portc: GPIO_PORTC,
     pub gpio_portd: GPIO_PORTD,
     pub ssi0: SSI0,
@@ -213,17 +219,23 @@ pub struct RuntimePeripherals {
     pub power_control: PowerControl,
     pub clocks: Clocks,
     pub delay: Delay,
-    pub uart0_tx: Tx<UART0, (), ()>,
-    pub uart0_rx: Rx<UART0, (), ()>,
-    pub uart1_tx: Tx<UART1, PB1<AlternateFunction<AF1, PullUp>>, ()>,
-    pub uart1_rx: Rx<UART1, PB0<AlternateFunction<AF1, PushPull>>, ()>,
+    pub uart0_tx: Tx<UART0, Uart0TxPin, ()>,
+    pub uart0_rx: Rx<UART0, Uart0RxPin, ()>,
+    pub uart1_tx: Tx<UART1, Uart1TxPin, ()>,
+    pub uart1_rx: Rx<UART1, Uart1RxPin, ()>,
 }
 
 impl From<(CorePeripherals, Peripherals)> for RuntimePeripherals {
     fn from((core_peripherals, peripherals): (CorePeripherals, Peripherals)) -> Self {
         let sysctl = initialize_sysctl(peripherals.SYSCTL.constrain());
-        let (uart0_tx, uart0_rx) =
-            initialize_uart0(peripherals.UART0, (), (), &sysctl.1, &sysctl.0);
+        let mut porta = peripherals.GPIO_PORTA.split(&sysctl.0);
+        let (uart0_tx, uart0_rx) = initialize_uart0(
+            peripherals.UART0,
+            porta.pa1.into_af_pull_up::<AF1>(&mut porta.control),
+            porta.pa0.into_af_push_pull::<AF1>(&mut porta.control),
+            &sysctl.1,
+            &sysctl.0,
+        );
         let mut portb = peripherals.GPIO_PORTB.split(&sysctl.0);
         let (uart1_tx, uart1_rx) = initialize_uart1(
             peripherals.UART1,
@@ -247,7 +259,6 @@ impl From<(CorePeripherals, Peripherals)> for RuntimePeripherals {
             tpiu: core_peripherals.TPIU,
             watchdog0: peripherals.WATCHDOG0,
             watchdog1: peripherals.WATCHDOG1,
-            gpio_porta: peripherals.GPIO_PORTA,
             gpio_portc: peripherals.GPIO_PORTC,
             gpio_portd: peripherals.GPIO_PORTD,
             ssi0: peripherals.SSI0,

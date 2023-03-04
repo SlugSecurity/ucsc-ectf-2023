@@ -5,7 +5,7 @@
 //!     - BogoFraming is a very simple framing protocol. Each message begins and ends with one NULL character.
 //!     - To prevent conflating NULL characters with the underlying data, the underlying data is hex encoded
 //!       and decoded.
-//!     - Helper functions to implement channels using this type of framing are in the [`bogoframing`] module.
+//!     - Helper functions to implement channels using this type of framing are in the [`bogoframing`](self) module.
 
 use super::Frame;
 use crate::communication::{self, CommunicationError, Timer};
@@ -171,9 +171,9 @@ pub fn recv_frame_with_data_timeout<T, U: Timer>(
 /// Sends a BogoFrame with the given [`Frame`]. This function mirrors
 /// [`FramedTxChannel::frame`](super::FramedTxChannel::frame()). See the documentation of
 /// that function for more details.
-pub fn frame_bogoframe<'a, const FRAME_CT: usize, T>(
+pub fn frame_bogoframe<const FRAME_CT: usize, T>(
     write_arg: &mut T,
-    frame: Frame<'a, FRAME_CT>,
+    frame: Frame<FRAME_CT>,
     mut write_fn: impl FnMut(&mut T, &[u8]),
     min_message_len: usize,
 ) -> communication::Result<()> {
@@ -189,10 +189,12 @@ pub fn frame_bogoframe<'a, const FRAME_CT: usize, T>(
 
     for frame_piece in frame {
         for chunk in frame_piece.chunks(HEX_ARRAY_LEN / 2) {
-            // This should never panic because the chunks should always fit in our hex array.
-            hex::encode_to_slice(chunk, &mut hex_array).unwrap();
+            let to_write = &mut hex_array[..chunk.len() * 2];
 
-            write_fn(write_arg, &hex_array[..chunk.len() * 2]);
+            // This should never panic because the chunks should always fit in our hex array.
+            hex::encode_to_slice(chunk, to_write).unwrap();
+
+            write_fn(write_arg, to_write);
         }
     }
 

@@ -24,8 +24,8 @@ pub mod lower_layers;
 /// Type definition for any [`CommunicationError`] [`Results`](core::result::Result).
 pub type Result<T> = core::result::Result<T, CommunicationError>;
 
-/// A channel to receive data from. See the documentation for [`recv`](RxChannel::recv) for
-/// more info.
+/// A channel to receive data from. See the documentation for [`recv_with_timeout`](RxChannel::recv_with_timeout)
+/// and [`recv_with_data_timeout`](RxChannel::recv_with_data_timeout) for more info.
 pub trait RxChannel {
     /// Receives data from the channel, putting the data received into ``dest``, returning the
     /// number of bytes written to it upon success. The buffer provided should have enough
@@ -88,8 +88,7 @@ pub trait TxChannel {
     /// # ERRORS:
     ///
     /// - [`CommunicationError::SendError`]
-    ///   - This could occur if any implementation-based error occurs while sending data, such as too large
-    /// of a message being sent.
+    ///   - This could occur if any implementation-based error occurs while sending data.
     /// - [`CommunicationError::InternalError`]
     ///   - This can occur if some internal error happens. This should only occur if something is wrong
     ///     with the implementation.
@@ -101,7 +100,8 @@ pub trait TxChannel {
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum CommunicationError {
-    /// An error that can occur during a receive operation. See [RxChannel::recv] for more details.
+    /// An error that can occur during a receive operation. See [RxChannel::recv_with_timeout] and
+    /// [RxChannel::recv_with_data_timeout] for more details.
     RecvError,
 
     /// An error that can occur during a send operation. See [TxChannel::send] for more details.

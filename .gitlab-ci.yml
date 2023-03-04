@@ -107,7 +107,7 @@ mirror:
   stage: deploy
   needs: [ectf_tools]
   variables:
-    BLACKLISTED_FILES: ".cargo .vscode docker_env/util_std/.cargo finding_friends tests .clang-format .gdbinit .gitlab-ci.yml Cargo.lock Cargo.toml CONTRIBUTING.md Dockerfile Dockerfile.CI *.nu *.sh"
+    BLACKLISTED_FILES: ".cargo .vscode comm_tests docker_env/util_std/.cargo finding_friends tests .clang-format .gdbinit .gitlab-ci.yml Cargo.lock Cargo.toml CONTRIBUTING.md Dockerfile Dockerfile.CI *.nu *.sh"
     GIT_USER_NAME: "Brian Mak"
     GIT_USER_EMAIL: "brmak@ucsc.edu"
   before_script:

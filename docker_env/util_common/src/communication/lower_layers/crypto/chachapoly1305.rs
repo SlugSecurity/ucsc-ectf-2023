@@ -19,13 +19,17 @@ type NonceSize = <ChannelAlgorithm as AeadCore>::NonceSize;
 const TAG_SIZE: usize = <TagSize as Unsigned>::USIZE;
 const NONCE_SIZE: usize = <NonceSize as Unsigned>::USIZE;
 
+/// The total metadata size required when receiving on a [`XChacha20Poly1305RxChannel`].
+pub const METADATA_SIZE: usize = TAG_SIZE + NONCE_SIZE;
+
 /// This [`RxChannel`] wraps around another [`RxChannel`] to decrypt communications encrypted
 /// by a [`XChacha20Poly1305TxChannel`], providing message authenticity and confidentiality.
 /// When reading from an [`XChacha20Poly1305RxChannel`], care must be taken to ensure that
 /// there is sufficient space to store the 16-byte tag and 24-byte nonce as well.
 /// If a received message doesn't contain a nonce or authentication tag or has an invalid
 /// authentication tag, a [`CommunicationError::RecvError`] is given. If the underlying
-/// channel gives this error, it will be propagated up.
+/// channel gives this error, it will be propagated up. Data sent and received through
+/// this channel must be at least 1 byte long.
 ///
 /// # ERRORS:
 ///
@@ -57,6 +61,11 @@ impl<T: RxChannel> XChacha20Poly1305RxChannel<T> {
         timer: &mut U,
     ) -> communication::Result<usize> {
         const METADATA_SIZE: usize = TAG_SIZE + NONCE_SIZE;
+
+        // Check that the destination buffer has space for at least one byte of ciphertext.
+        if dest.len() <= METADATA_SIZE {
+            return Err(CommunicationError::RecvError);
+        }
 
         // Read message from inner channel.
         let bytes_read = read_fn(self, dest, timer)?;
@@ -92,6 +101,22 @@ impl<T: RxChannel> KeyedChannel for XChacha20Poly1305RxChannel<T> {
 }
 
 impl<T: RxChannel> RxChannel for XChacha20Poly1305RxChannel<T> {
+    /// Receives data from the channel, putting the data received into ``dest``, returning the
+    /// number of bytes written to it upon success. The buffer provided should have enough
+    /// space to store the data that needs to be received along with its metadata size. The provided timeout
+    /// is reset on each byte received. If the timeout has passed and not enough bytes have been received, this
+    /// function returns an error. Upon an error, a [`CommunicationError`] is given.
+    ///
+    /// # ERRORS:
+    ///
+    /// - [`CommunicationError::RecvError`] - This error can occur in the following cases:
+    ///   - If the provided buffer is too small to fit a whole message sent in a frame or if a malformed
+    ///     message was sent. In this channel, there must be enough space to accomodate for [`METADATA_SIZE`]
+    ///     bytes + 1 additional byte of message data. A blank message can neither be sent nor received.
+    ///   - If the timeout is reached.
+    ///  - [`CommunicationError::InternalError`]
+    ///    - This can occur if some internal error happens. This should only occur if something is wrong
+    ///      with the implementation.
     fn recv_with_data_timeout<U: Timer>(
         &mut self,
         dest: &mut [u8],
@@ -104,6 +129,22 @@ impl<T: RxChannel> RxChannel for XChacha20Poly1305RxChannel<T> {
         )
     }
 
+    /// Receives data from the channel, putting the data received into ``dest``, returning the
+    /// number of bytes written to it upon success. The buffer provided should have enough
+    /// space to store the data that needs to be received along with its metadata size. The provided time to
+    /// block is for the entire receive operation. If the timeout has passed and not enough bytes have been received,
+    /// this function returns an error. Upon an error, a [`CommunicationError`] is given.
+    ///
+    /// # ERRORS:
+    ///
+    /// - [`CommunicationError::RecvError`] - This error can occur in the following cases:
+    ///   - If the provided buffer is too small to fit a whole message sent in a frame or if a malformed
+    ///     message was sent. In this channel, there must be enough space to accomodate for [`METADATA_SIZE`]
+    ///     bytes + 1 additional byte of message data. A blank message can neither be sent nor received.
+    ///   - If the timeout is reached.
+    ///  - [`CommunicationError::InternalError`]
+    ///    - This can occur if some internal error happens. This should only occur if something is wrong
+    ///      with the implementation.
     fn recv_with_timeout<U: Timer>(
         &mut self,
         dest: &mut [u8],
@@ -144,7 +185,24 @@ impl<T: FramedTxChannel, U: RandomSource> KeyedChannel for XChacha20Poly1305TxCh
 }
 
 impl<T: FramedTxChannel, U: RandomSource> TxChannel for XChacha20Poly1305TxChannel<T, U> {
+    /// Sends the data from ``src`` through the channel. Upon an error, a [`CommunicationError`]
+    /// is given.
+    ///
+    /// # ERRORS:
+    ///
+    /// - [`CommunicationError::SendError`]
+    ///   - This could occur if any implementation-based error occurs while sending data.
+    ///     This could be because:
+    ///         - The message was too short. With this channel, at least one byte of data must be sent.
+    ///         - An error occurred during message encryption.
+    /// - [`CommunicationError::InternalError`]
+    ///   - This can occur if some internal error happens. This should only occur if something is wrong
+    ///     with the implementation.
     fn send(&mut self, buff: &mut [u8]) -> communication::Result<()> {
+        if buff.is_empty() {
+            return Err(CommunicationError::SendError);
+        }
+
         let mut nonce: GenericArray<u8, NonceSize> = Default::default();
 
         // Fill nonce with random bytes.

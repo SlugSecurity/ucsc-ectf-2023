@@ -1,0 +1,15 @@
+[package]
+name = "ucsc-ectf-uart0-recv-board"
+version = "0.1.0"
+edition = "2021"
+authors = ["2023 UCSC eCTF Team"]
+categories = ["embedded", "no-std"]
+license = "MIT"
+
+[dependencies]
+cortex-m-rt = "0.7.2"
+cortex-m-semihosting = "0.5.0"
+panic-semihosting = { version = "0.6.0" }
+tm4c123x-hal = { version = "0.10.2", features = ["rt"] }
+ucsc-ectf-util-no-std = { path = "../../docker_env/util_no_std" }
+ucsc-ectf-comm-tests-common = { path = "../common" }
