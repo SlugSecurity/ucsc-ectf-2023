@@ -76,9 +76,15 @@ ectf_tools:
     - ectf_tools build.depl --design . --name ectf --deployment a
     - ectf_tools build.fob --design . --name ectf --deployment a --fob-name fob1 --fob-out output
     - ectf_tools build.car_fob_pair --design . --name ectf --deployment a --car-name car --fob-name fob0 --car-out output --fob-out output --car-id 255 --pair-pin cafebe --car-unlock-secret 'unlock' --car-feature1-secret 'feature1' --car-feature2-secret 'feature2' --car-feature3-secret 'feature3'
+    - docker run --rm -v ectf.ectf.a.secrets.vol:/secrets -v ectf.ectf.tools.vol:/tools_out:ro --workdir=/tools_out -v ./output:/package_dir ectf:ectf ./package_tool --package-name feature1 --car-id 255 --feature-number 1
+    - docker run --rm -v ectf.ectf.a.secrets.vol:/secrets -v ectf.ectf.tools.vol:/tools_out:ro --workdir=/tools_out -v ./output:/package_dir ectf:ectf ./package_tool --package-name feature2 --car-id 255 --feature-number 2
+    - docker run --rm -v ectf.ectf.a.secrets.vol:/secrets -v ectf.ectf.tools.vol:/tools_out:ro --workdir=/tools_out -v ./output:/package_dir ectf:ectf ./package_tool --package-name feature3 --car-id 255 --feature-number 3
   artifacts:
     paths:
-      - output/*.*
+      - output/
+    exclude:
+      - output/cache/**/*
+      - output/cache/
     expire_in: 1 day
   cache:
     paths:
