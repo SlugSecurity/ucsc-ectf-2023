@@ -55,8 +55,10 @@ fn recv_verified_ephemeral_public_key(
                 &mut pairing_verifying_key_bytes,
             )
             .expect("EEPROM read failed: pairing verifying key.");
-        let pairing_verifying_key = VerifyingKey::from_public_key_der(&pairing_verifying_key_bytes)
-            .expect("Failed to deserialize pairing verifying key.");
+        let pairing_verifying_key = VerifyingKey::from_public_key_der(
+            &pairing_verifying_key_bytes[1..pairing_verifying_key_bytes[0] as usize + 1],
+        )
+        .expect("Failed to deserialize pairing verifying key.");
 
         // Verify and get key signing public key.
         let Some(key_signing_public_key) = msg

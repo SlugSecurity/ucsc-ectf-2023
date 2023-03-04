@@ -91,13 +91,13 @@ fn main() {
             .unwrap();
         let pairing_signing_key = SigningKey::from_bytes(&private_key_bytes).unwrap();
         let pairing_verifying_key = pairing_signing_key.verifying_key();
+        let mut pairing_verifying_key_bytes = pairing_verifying_key
+            .to_public_key_der()
+            .unwrap()
+            .into_vec();
+        pairing_verifying_key_bytes.insert(0, pairing_verifying_key_bytes.len() as u8);
         pairing_verifying_key_file
-            .write_all(
-                pairing_verifying_key
-                    .to_public_key_der()
-                    .unwrap()
-                    .as_bytes(),
-            )
+            .write_all(&pairing_verifying_key_bytes)
             .unwrap();
 
         pairing_private_key_file
@@ -119,13 +119,13 @@ fn main() {
             .unwrap();
         let feature_signing_key = SigningKey::from_bytes(&feature_signing_key_bytes).unwrap();
         let feature_verifying_key = feature_signing_key.verifying_key();
+        let mut feature_verifying_key_bytes = feature_verifying_key
+            .to_public_key_der()
+            .unwrap()
+            .into_vec();
+        feature_verifying_key_bytes.insert(0, feature_verifying_key_bytes.len() as u8);
         feature_verifying_key_file
-            .write_all(
-                feature_verifying_key
-                    .to_public_key_der()
-                    .unwrap()
-                    .as_bytes(),
-            )
+            .write_all(&feature_verifying_key_bytes)
             .unwrap();
 
         eeprom_field_from_path(

@@ -75,13 +75,13 @@ fn main() {
             .unwrap();
         let feature_signing_key = SigningKey::from_bytes(&feature_signing_key_bytes).unwrap();
         let feature_verifying_key = feature_signing_key.verifying_key();
+        let mut feature_verifying_key_bytes = feature_verifying_key
+            .to_public_key_der()
+            .unwrap()
+            .into_vec();
+        feature_verifying_key_bytes.insert(0, feature_verifying_key_bytes.len() as u8);
         feature_verifying_key_file
-            .write_all(
-                feature_verifying_key
-                    .to_public_key_der()
-                    .unwrap()
-                    .as_bytes(),
-            )
+            .write_all(&feature_verifying_key_bytes)
             .unwrap();
 
         eeprom_field_from_path(

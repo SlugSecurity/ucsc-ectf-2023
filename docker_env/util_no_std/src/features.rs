@@ -31,8 +31,10 @@ pub fn verify_packaged_feature_signed<'a>(
             &mut verifying_key_bytes,
         )
         .expect("EEPROM read failed: feature verifying key.");
-    let verifying_key = VerifyingKey::from_public_key_der(&verifying_key_bytes)
-        .expect("Failed to deserialize feature verifying key.");
+    let verifying_key = VerifyingKey::from_public_key_der(
+        &verifying_key_bytes[1..verifying_key_bytes[0] as usize + 1],
+    )
+    .expect("Failed to deserialize feature verifying key.");
 
     // Verify the signature.
     let mut packaged_feature_buf = [0; 16];
