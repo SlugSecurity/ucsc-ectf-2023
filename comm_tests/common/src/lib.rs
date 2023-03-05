@@ -26,6 +26,7 @@ pub const RX_KEY: [u8; 32] = [
     45, 249, 236, 184, 243, 34, 227, 240, 89, 1, 15, 213, 123, 109, 16, 235, 244, 202, 22, 193,
     124, 140, 26, 111, 12, 222, 90, 234, 64, 178, 67, 17,
 ];
+pub const MAX_MESSAGE_SIZE: usize = 1024;
 
 pub trait RxTxChannel: RxChannel + TxChannel {}
 impl<T: RxChannel + TxChannel> RxTxChannel for T {}

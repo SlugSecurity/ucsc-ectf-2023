@@ -448,6 +448,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
+name = "panic-halt"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de96540e0ebde571dc55c73d60ef407c653844e6f9a1e2fdbd40c07b9252d812"
+
+[[package]]
 name = "panic-semihosting"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -772,8 +778,7 @@ name = "ucsc-ectf-uart0-recv-board"
 version = "0.1.0"
 dependencies = [
  "cortex-m-rt",
- "cortex-m-semihosting",
- "panic-semihosting",
+ "panic-halt",
  "tm4c123x-hal",
  "ucsc-ectf-comm-tests-common",
  "ucsc-ectf-util-no-std",

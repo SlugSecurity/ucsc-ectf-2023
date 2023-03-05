@@ -1,15 +1,13 @@
 #![no_main]
 #![no_std]
 
-extern crate panic_semihosting;
+extern crate panic_halt;
 extern crate tm4c123x_hal;
 
-use core::fmt::Write;
 use cortex_m_rt::entry;
-use cortex_m_semihosting::hio;
 use tm4c123x_hal::{CorePeripherals, Peripherals};
 use ucsc_ectf_comm_tests_common::run_recv_tests;
-use ucsc_ectf_util_no_std::Runtime;
+use ucsc_ectf_util_no_std::{communication::TxChannel, Runtime};
 
 #[entry]
 fn main_test() -> ! {
@@ -28,9 +26,10 @@ fn main_test() -> ! {
         rt.hib_controller.create_timer(d)
     });
 
-    let mut stdout = hio::hstdout().unwrap();
-
-    writeln!(stdout, "Finished receiving!").unwrap();
+    // Indicate finish receiving here
+    rt.uart0_controller
+        .send(&mut [b's', b'u', b'c', b'c', b'e', b's', b's'])
+        .expect("Couldn't send success");
 
     #[allow(clippy::empty_loop)]
     loop {}

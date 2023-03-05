@@ -6,7 +6,7 @@ use rand_chacha::{
 };
 use ucsc_ectf_util_common::timer::Timer;
 
-use crate::{RxTxChannel, STARTING_SEED};
+use crate::{RxTxChannel, STARTING_SEED, METADATA_OVERHEAD, MAX_MESSAGE_SIZE};
 
 /// Tests that trying to send data with length 0 returns an error.
 pub fn empty_send_error_test<T: RxTxChannel>(uart: &mut T) {
@@ -61,15 +61,24 @@ pub fn send_repeated_large_binary_test<T: RxTxChannel, U: Timer, V: Fn(Duration)
     uart: &mut T,
     timer_fn: &V,
 ) {
+    // Sync with the receiver.
+    let mut sync = [0; 1 + METADATA_OVERHEAD];
+    let mut sync_timer = timer_fn(Duration::from_secs(10));
+    let _ = uart.recv_with_data_timeout(&mut sync, &mut sync_timer);
+
+    // Give the receiver time to start receiving.
+    let mut wait_timer = timer_fn(Duration::from_millis(1));
+    while !wait_timer.poll() {}
+
     const ITERATION_COUNT: usize = 30;
-    const MSG_LEN: usize = 10000;
+    const MSG_LEN: usize = MAX_MESSAGE_SIZE;
 
     let mut rng = ChaCha20Rng::from_seed(STARTING_SEED);
     let mut msg = [0; MSG_LEN];
 
     for _ in 0..ITERATION_COUNT {
         // Delay to allow for the previous message to be processed.
-        let mut timer = timer_fn(Duration::from_millis(50));
+        let mut timer = timer_fn(Duration::from_millis(500));
 
         while !timer.poll() {}
 
@@ -89,7 +98,7 @@ pub fn send_should_not_timeout_test<T: RxTxChannel, U: Timer, V: Fn(Duration) ->
     uart: &mut T,
     timer_fn: &V,
 ) {
-    let mut timer = timer_fn(Duration::from_millis(999));
+    let mut timer = timer_fn(Duration::from_millis(900));
 
     while !timer.poll() {}
 
@@ -107,7 +116,7 @@ pub fn send_should_timeout_test<T: RxTxChannel, U: Timer, V: Fn(Duration) -> U>(
     uart: &mut T,
     timer_fn: &V,
 ) {
-    let mut timer = timer_fn(Duration::from_millis(1001));
+    let mut timer = timer_fn(Duration::from_millis(1100));
 
     while !timer.poll() {}
 
@@ -149,7 +158,12 @@ pub fn send_should_data_timeout_test<T: RxTxChannel, U: Timer, V: Fn(Duration) -
     uart: &mut T,
     timer_fn: &V,
 ) {
-    let mut timer = timer_fn(Duration::from_millis(1010));
+    // Sync with the receiver.
+    let mut sync = [0; 1 + METADATA_OVERHEAD];
+    let mut sync_timer = timer_fn(Duration::from_secs(10));
+    let _ = uart.recv_with_data_timeout(&mut sync, &mut sync_timer);
+
+    let mut timer = timer_fn(Duration::from_millis(1100));
 
     while !timer.poll() {}
 

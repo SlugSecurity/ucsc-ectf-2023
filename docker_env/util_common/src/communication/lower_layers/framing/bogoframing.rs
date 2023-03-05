@@ -174,7 +174,7 @@ pub fn recv_frame_with_data_timeout<T, U: Timer>(
 pub fn frame_bogoframe<const FRAME_CT: usize, T>(
     write_arg: &mut T,
     frame: Frame<FRAME_CT>,
-    mut write_fn: impl FnMut(&mut T, &[u8]),
+    mut write_fn: impl FnMut(&mut T, &[u8]) -> communication::Result<()>,
     min_message_len: usize,
 ) -> communication::Result<()> {
     const HEX_ARRAY_LEN: usize = 32;
@@ -185,7 +185,7 @@ pub fn frame_bogoframe<const FRAME_CT: usize, T>(
 
     let mut hex_array = [0; HEX_ARRAY_LEN];
 
-    write_fn(write_arg, b"\0");
+    write_fn(write_arg, b"\0")?;
 
     for frame_piece in frame {
         for chunk in frame_piece.chunks(HEX_ARRAY_LEN / 2) {
@@ -194,11 +194,11 @@ pub fn frame_bogoframe<const FRAME_CT: usize, T>(
             // This should never panic because the chunks should always fit in our hex array.
             hex::encode_to_slice(chunk, to_write).unwrap();
 
-            write_fn(write_arg, to_write);
+            write_fn(write_arg, to_write)?;
         }
     }
 
-    write_fn(write_arg, b"\0");
+    write_fn(write_arg, b"\0")?;
 
     Ok(())
 }

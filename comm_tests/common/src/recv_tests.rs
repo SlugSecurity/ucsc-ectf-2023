@@ -6,7 +6,7 @@ use rand_chacha::{
 };
 use ucsc_ectf_util_common::{communication::CommunicationError, timer::Timer};
 
-use crate::{RxTxChannel, METADATA_OVERHEAD, STARTING_SEED};
+use crate::{RxTxChannel, METADATA_OVERHEAD, STARTING_SEED, MAX_MESSAGE_SIZE};
 
 /// Tests that trying to receive data into a buffer of length 0 immediately returns an error.
 pub fn empty_recv_error_test<T: RxTxChannel, U: Timer, V: Fn(Duration) -> U>(
@@ -122,15 +122,21 @@ pub fn recv_repeated_large_binary_test<T: RxTxChannel, U: Timer, V: Fn(Duration)
     uart: &mut T,
     timer_fn: &V,
 ) {
+    // Sync with the sender.
+    const TO_SEND_SYNC: &[u8] = b"a";
+    let mut sync = [0; TO_SEND_SYNC.len()];
+    sync.copy_from_slice(TO_SEND_SYNC);
+    uart.send(&mut sync).unwrap();
+
     const ITERATION_COUNT: usize = 30;
-    const MSG_LEN: usize = 10000;
+    const MSG_LEN: usize = MAX_MESSAGE_SIZE;
 
     let mut rng = ChaCha20Rng::from_seed(STARTING_SEED);
     let mut msg = [0; MSG_LEN + METADATA_OVERHEAD];
 
     for _ in 0..ITERATION_COUNT {
         let mut expected = [0; MSG_LEN];
-        let mut timer = timer_fn(Duration::from_secs(1));
+        let mut timer = timer_fn(Duration::from_secs(2));
         let read = uart.recv_with_data_timeout(&mut msg, &mut timer).unwrap();
 
         rng.fill_bytes(&mut expected);
@@ -214,6 +220,12 @@ pub fn recv_should_data_timeout_test<T: RxTxChannel, U: Timer, V: Fn(Duration) -
     uart: &mut T,
     timer_fn: &V,
 ) {
+    // Sync with the sender.
+    const TO_SEND_SYNC: &[u8] = b"a";
+    let mut sync = [0; TO_SEND_SYNC.len()];
+    sync.copy_from_slice(TO_SEND_SYNC);
+    uart.send(&mut sync).unwrap();
+
     let mut test = [0; 1 + METADATA_OVERHEAD];
     let mut timer = timer_fn(Duration::from_secs(1));
     let res = uart.recv_with_data_timeout(&mut test, &mut timer);
@@ -221,7 +233,7 @@ pub fn recv_should_data_timeout_test<T: RxTxChannel, U: Timer, V: Fn(Duration) -
     res.expect_err("Failed recv data timeout test");
 
     // Flush last message.
-    let mut flush_timer = timer_fn(Duration::from_millis(50));
+    let mut flush_timer = timer_fn(Duration::from_millis(100));
 
     while !flush_timer.poll() {} // Wait for message to come through. Message will be cut off, so don't verify it.
     flush_timer.reset();

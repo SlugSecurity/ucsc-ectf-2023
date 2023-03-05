@@ -1,7 +1,7 @@
 use std::{
-    io::{BufReader, BufWriter, Read, Write},
+    io::{Read, Write},
     net::{TcpStream, ToSocketAddrs},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 use ucsc_ectf_util_common::{
@@ -26,13 +26,14 @@ pub(crate) fn connect(
         .try_clone()
         .map_err(|_| CommunicationError::InternalError)?;
 
-    Ok((
-        FramedTcpTxChannel(BufWriter::new(stream)),
-        FramedTcpRxChannel(BufReader::new(stream_2)),
-    ))
+    stream
+        .set_nodelay(true)
+        .map_err(|_| CommunicationError::InternalError)?;
+
+    Ok((FramedTcpTxChannel(stream), FramedTcpRxChannel(stream_2)))
 }
 
-fn read_byte(stream: &mut BufReader<TcpStream>) -> Result<u8, CommunicationError> {
+fn read_byte(stream: &mut TcpStream) -> Result<u8, CommunicationError> {
     let mut data = [0; 1];
 
     // Our socket should never close, so if it does (returns 0), it's an error
@@ -42,7 +43,7 @@ fn read_byte(stream: &mut BufReader<TcpStream>) -> Result<u8, CommunicationError
     }
 }
 
-pub struct FramedTcpRxChannel(BufReader<TcpStream>);
+pub struct FramedTcpRxChannel(TcpStream);
 
 impl RxChannel for FramedTcpRxChannel {
     fn recv_with_data_timeout<T: Timer>(
@@ -54,7 +55,6 @@ impl RxChannel for FramedTcpRxChannel {
 
         // We keep track of this to not kill our CPUs on host tools :)
         self.0
-            .get_ref()
             .set_read_timeout(Some(timeout_duration))
             .map_err(|_| CommunicationError::InternalError)?;
 
@@ -82,9 +82,13 @@ impl RxChannel for FramedTcpRxChannel {
             dest,
             timer,
             |ch| {
+                let read_timeout = timeout_duration.saturating_sub(Instant::now() - start_instant);
+                if read_timeout == Duration::ZERO {
+                    return Err(CommunicationError::RecvError);
+                }
+
                 // We keep track of this to not kill our CPUs on host tools :)
-                ch.0.get_ref()
-                    .set_read_timeout(Some(timeout_duration - (Instant::now() - start_instant)))
+                ch.0.set_read_timeout(Some(read_timeout))
                     .map_err(|_| CommunicationError::InternalError)?;
 
                 read_byte(&mut ch.0)
@@ -94,23 +98,18 @@ impl RxChannel for FramedTcpRxChannel {
     }
 }
 
-pub struct FramedTcpTxChannel(BufWriter<TcpStream>);
+pub struct FramedTcpTxChannel(TcpStream);
 
 impl FramedTxChannel for FramedTcpTxChannel {
     fn frame<'a, const FRAME_CT: usize>(
         &mut self,
         frame: impl FnOnce() -> Result<Frame<'a, FRAME_CT>, CommunicationError>,
     ) -> communication::Result<()> {
-        let frame = frame()?;
-
-        for part in frame {
-            self.0
-                .write(part)
-                .map_err(|_| CommunicationError::SendError)?;
-        }
-
-        self.0.flush().map_err(|_| CommunicationError::SendError)?;
-
-        Ok(())
+        bogoframing::frame_bogoframe(
+            self,
+            frame()?,
+            |ch, s| ch.0.write_all(s).map_err(|_| CommunicationError::SendError),
+            MIN_FRAMED_UART_MESSAGE,
+        )
     }
 }

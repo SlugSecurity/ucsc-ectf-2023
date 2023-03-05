@@ -102,7 +102,7 @@ where
         bogoframing::frame_bogoframe(
             self,
             frame()?,
-            |ch, s| ch.tx.write_all(s),
+            |ch, s| Ok(ch.tx.write_all(s)),
             MIN_FRAMED_UART_MESSAGE,
         )
     }
@@ -119,7 +119,7 @@ where
         bogoframing::frame_bogoframe(
             self,
             frame()?,
-            |ch, s| ch.tx.write_all(s),
+            |ch, s| Ok(ch.tx.write_all(s)),
             MIN_FRAMED_UART_MESSAGE,
         )
     }
