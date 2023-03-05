@@ -6,6 +6,6 @@ host_tools: FORCE
 	mv ${TOOLS_OUT_DIR}/ucsc-ectf-display-unlock-message ${TOOLS_OUT_DIR}/unlock_tool
 	mv ${TOOLS_OUT_DIR}/ucsc-ectf-enable-feature ${TOOLS_OUT_DIR}/enable_tool
 	mv ${TOOLS_OUT_DIR}/ucsc-ectf-package-feature ${TOOLS_OUT_DIR}/package_tool
-	mv ${TOOLS_OUT_DIR}/ucsc-ectf-pair-fob ${TOOLS_OUT_DIR}/program_tool
+	mv ${TOOLS_OUT_DIR}/ucsc-ectf-pair-fob ${TOOLS_OUT_DIR}/pair_tool
 
 FORCE:;
