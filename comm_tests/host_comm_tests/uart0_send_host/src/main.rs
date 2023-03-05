@@ -6,7 +6,7 @@ use ucsc_ectf_util_std::{
     timer::StdTimer,
 };
 
-const SUCCESS_MSG: &'static [u8] = b"success";
+const SUCCESS_MSG: &[u8] = b"success";
 
 fn main() {
     let mut args = env::args();
@@ -21,7 +21,7 @@ fn main() {
     let mut socket = VerifiedFramedTcpSocket::keyless_connect(("ectf-net", port))
         .expect("Couldn't connect with specified port.");
 
-    run_send_tests(&mut socket, |d| StdTimer::new(d));
+    run_send_tests(&mut socket, StdTimer::new);
 
     println!("Finished sending!");
 
@@ -31,7 +31,9 @@ fn main() {
         &mut success,
         &mut StdTimer::new(Duration::from_millis(1000)),
     ) {
-        Ok(_) if success.starts_with(SUCCESS_MSG) => println!("Successfully ran all receive tests."),
+        Ok(_) if success.starts_with(SUCCESS_MSG) => {
+            println!("Successfully ran all receive tests.")
+        }
         _ => println!("Receive tests failed or failed to get right success message"),
     };
 }

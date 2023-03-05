@@ -16,7 +16,7 @@ fn main() {
     let mut socket = VerifiedFramedTcpSocket::keyless_connect(("ectf-net", port))
         .expect("Couldn't connect with specified port.");
 
-    run_recv_tests(&mut socket, |d| StdTimer::new(d));
+    run_recv_tests(&mut socket, StdTimer::new);
 
     println!("Finished receiving!");
 }
