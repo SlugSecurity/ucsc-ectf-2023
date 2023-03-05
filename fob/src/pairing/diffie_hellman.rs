@@ -90,18 +90,18 @@ fn send_diffie_hellman_msg(
 ) -> bool {
     // Construct Uart1Message.
     let pairing_public_key_encoded = pairing_public_key.to_encoded_point(true);
-    let pairing_public_key_signature_der = pairing_public_key_signature.to_der();
+    let pairing_public_key_signature_bytes = pairing_public_key_signature.to_bytes();
     let ephemeral_public_key_encoded = ephemeral_public_key.to_encoded_point(true);
-    let ephemeral_public_key_signature_der = ephemeral_public_key_signature.to_der();
+    let ephemeral_public_key_signature_bytes = ephemeral_public_key_signature.to_bytes();
 
     let msg = Uart1Message::DiffieHellman(DiffieHellmanMessage {
         key_signing_public_key: VerifiedPublicKey {
             public_key: pairing_public_key_encoded.as_bytes(),
-            public_key_signature: pairing_public_key_signature_der.as_bytes(),
+            public_key_signature: &pairing_public_key_signature_bytes,
         },
         ephemeral_public_key: VerifiedPublicKey {
             public_key: ephemeral_public_key_encoded.as_bytes(),
-            public_key_signature: ephemeral_public_key_signature_der.as_bytes(),
+            public_key_signature: &ephemeral_public_key_signature_bytes,
         },
     });
 
@@ -194,7 +194,7 @@ fn get_pairing_public_key_signature(rt: &mut Runtime) -> Signature {
         )
         .expect("EEPROM read failed: pairing public key signature.");
 
-    Signature::from_der(&pairing_public_key_signature_bytes)
+    Signature::try_from(pairing_public_key_signature_bytes.as_slice())
         .expect("Failed to deserialize pairing public key signature.")
 }
 

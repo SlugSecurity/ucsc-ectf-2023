@@ -1,7 +1,9 @@
+use crate::MAX_MESSAGE_SIZE;
 use core::time::Duration;
 use ucsc_ectf_util_no_std::{
+    communication::{CommunicationError, TxChannel},
     eeprom::{EepromReadWriteField, BYTE_FIELD_SIZE, PAIRING_PIN_SIZE},
-    messages::Uart0Message,
+    messages::{HostToolAck, Uart0Message},
     timer::Timer,
     Runtime,
 };
@@ -9,6 +11,19 @@ use zeroize::Zeroize;
 
 mod diffie_hellman;
 mod pairing_sequence;
+
+fn send_ack(rt: &mut Runtime) {
+    let mut buf = [0; MAX_MESSAGE_SIZE];
+    let res = postcard::to_slice(
+        &Uart0Message::PairingPinResponse(HostToolAck(true)),
+        &mut buf,
+    )
+    .expect("Failed to serialize pairing response.");
+
+    if let Err(CommunicationError::InternalError) = rt.uart0_controller.send(res) {
+        panic!("Failed to send pairing response (internal error).");
+    }
+}
 
 /// Processes pairing messages while unpaired.
 pub(crate) fn unpaired_listen_and_pair(rt: &mut Runtime) {
@@ -20,6 +35,9 @@ pub(crate) fn unpaired_listen_and_pair(rt: &mut Runtime) {
 
         // Pair self. Break if pairing is successful.
         if pairing_sequence::run_unpaired(rt) {
+            // Send acknowledgement to host.
+            send_ack(rt);
+
             break;
         }
     }
@@ -27,6 +45,8 @@ pub(crate) fn unpaired_listen_and_pair(rt: &mut Runtime) {
 
 /// Checks a pairing PIN with a cooldown if the PIN is incorrect.
 fn check_pin_attempt(rt: &mut Runtime, pairing_pin_attempt: u32) -> bool {
+    const PAIRING_PIN_REAL_SIZE: usize = 3;
+
     // Check pairing longer cooldown byte and create cooldown timer.
     let mut pairing_longer_cooldown_byte = [0; BYTE_FIELD_SIZE];
     rt.eeprom_controller
@@ -47,6 +67,7 @@ fn check_pin_attempt(rt: &mut Runtime, pairing_pin_attempt: u32) -> bool {
     rt.eeprom_controller
         .read_slice(EepromReadWriteField::PairingPin, &mut pairing_pin_bytes)
         .expect("EEPROM read failed: pairing PIN.");
+    pairing_pin_bytes.rotate_right(PAIRING_PIN_SIZE - PAIRING_PIN_REAL_SIZE); // Account for build script's encoding.
     let mut pairing_pin = u32::from_be_bytes(pairing_pin_bytes);
     pairing_pin_bytes.zeroize();
     let pairing_pin_correct = pairing_pin_attempt == pairing_pin;

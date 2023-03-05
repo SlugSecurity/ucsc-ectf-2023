@@ -146,11 +146,11 @@ const UNLOCK_MESSAGE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
 pub enum EepromReadOnlyField {
     /// The secret of the key used for the Diffie-Hellman key exchange during pairing.
     PairingPrivateKey,
-    /// The signature of the public key used for the Diffie-Hellman key exchange during pairing.
+    /// The signature of the SEC1 public key used for the Diffie-Hellman key exchange during pairing.
     PairingPublicKeySignature,
-    /// The verifying key used for the Diffie-Hellman key exchange during pairing.
+    /// The DER-encoded verifying key used for the Diffie-Hellman key exchange during pairing.
     PairingVerifyingKey,
-    /// The verifying key used to verify packaged features.
+    /// The DER-encoded verifying key used to verify packaged features.
     FeatureVerifyingKey,
     /// The key used as a starting point for the RNG seed hash.
     SecretSeed,

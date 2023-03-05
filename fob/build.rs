@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 
 use hex::decode;
 use k256::ecdsa::{signature::Signer, Signature, SigningKey};
+use k256::elliptic_curve::sec1::ToEncodedPoint;
 use k256::pkcs8::EncodePublicKey;
 use k256::SecretKey;
 use ucsc_ectf_eeprom_layout::{
@@ -105,10 +106,9 @@ fn main() {
             .unwrap();
         let pairing_private_key = SecretKey::from_be_bytes(&private_key_bytes).unwrap();
         let pairing_public_key = pairing_private_key.public_key();
-        let pairing_public_key_der = pairing_public_key.to_public_key_der().unwrap();
 
         let pairing_public_key_signature: Signature =
-            pairing_signing_key.sign(pairing_public_key_der.as_bytes());
+            pairing_signing_key.sign(pairing_public_key.to_encoded_point(true).as_bytes());
         pairing_public_key_signature_file
             .write_all(&pairing_public_key_signature.to_bytes())
             .unwrap();

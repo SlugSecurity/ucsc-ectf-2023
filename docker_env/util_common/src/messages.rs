@@ -198,7 +198,7 @@ pub struct VerifiedPublicKey<'a> {
     /// The public key in SEC1 format.
     pub public_key: &'a [u8],
 
-    /// The signature authenticating ``public_key`` in DER format.
+    /// The signature authenticating ``public_key`` in byte format.
     pub public_key_signature: &'a [u8],
 }
 
@@ -206,7 +206,7 @@ impl VerifiedPublicKey<'_> {
     /// Verifies and gets the public key.
     pub fn verify_and_get_key(&self, verifying_key: &VerifyingKey) -> Option<PublicKey> {
         // Verify key.
-        let public_key_signature = Signature::from_der(self.public_key_signature).ok()?;
+        let public_key_signature = Signature::try_from(self.public_key_signature).ok()?;
 
         verifying_key
             .verify(self.public_key, &public_key_signature)
