@@ -7,6 +7,7 @@
 extern crate panic_halt;
 
 use core::{arch::global_asm, time::Duration};
+use cortex_m::interrupt;
 use cortex_m_rt::entry;
 use tm4c123x_hal::{CorePeripherals, Peripherals};
 use ucsc_ectf_util_no_std::{
@@ -40,6 +41,13 @@ jump_to_reset:
 
 #[entry]
 fn main() -> ! {
+    // Enable interrupts because the stupid 31506a8448a761a448a08aa69d9116ea8a6cb1c6b3f4244b3043051f69c9cc3c
+    // bootloader disables them and leaves them disabled.
+    // SAFETY: This is not run in an interrupt-free context, so this is safe.
+    unsafe {
+        interrupt::enable();
+    }
+
     // Grab peripherals.
     let core_peripherals = CorePeripherals::take().unwrap();
     let peripherals = Peripherals::take().unwrap();
