@@ -5,6 +5,8 @@ car: FORCE
 # Create the verifying key and EEPROM files, since the EEPROM file has a fixed size and the verifying key is shorter than the field bounds.
 	head -c 2048 /dev/zero > ${EEPROM_PATH}
 	head -c 128 /dev/zero > ${SECRETS_DIR}/FEATURE_VERIFYING_KEY
+	rm -f .cargo
+	mv cargo/ .cargo/ 2> /dev/null || true
 	cargo build --bin ucsc-ectf-car --release --out-dir /tmp/bld -Z unstable-options
 	cp /tmp/bld/ucsc-ectf-car ${ELF_PATH}
 	arm-none-eabi-objcopy -O binary /tmp/bld/ucsc-ectf-car ${BIN_PATH}

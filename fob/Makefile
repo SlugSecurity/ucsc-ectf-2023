@@ -6,6 +6,8 @@ fob: FORCE
 	head -c 128 /dev/zero > ${SECRETS_DIR}/PAIRING_VERIFYING_KEY
 	head -c 128 /dev/zero > ${SECRETS_DIR}/PAIRING_PUBLIC_KEY
 	head -c 128 /dev/zero > ${SECRETS_DIR}/FEATURE_VERIFYING_KEY
+	rm -f .cargo
+	mv cargo/ .cargo/ 2> /dev/null || true
 	cargo build --bin ucsc-ectf-fob --release --out-dir /tmp/bld -Z unstable-options
 	cp /tmp/bld/ucsc-ectf-fob ${ELF_PATH}
 	arm-none-eabi-objcopy -O binary /tmp/bld/ucsc-ectf-fob ${BIN_PATH}
