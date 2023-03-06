@@ -13,18 +13,14 @@ use rand_chacha::{
     rand_core::{RngCore, SeedableRng},
     ChaCha20Rng,
 };
-use tm4c123x_hal::{
-    serial::Rx,
-    tm4c123x::{HIB, UART1},
-    CorePeripherals, Peripherals,
-};
+use tm4c123x_hal::{serial::Rx, tm4c123x::UART1, CorePeripherals, Peripherals};
 use ucsc_ectf_comm_tests_common::{
     run_recv_tests, METADATA_OVERHEAD, RX_KEY, STARTING_SEED, TX_KEY,
 };
 use ucsc_ectf_util_no_std::{
     communication::{lower_layers::framing::bogoframing, CommunicationError},
     timer::HibTimer,
-    Runtime, Uart1RxPin,
+    Arc, HibPool, Runtime, Uart1RxPin,
 };
 
 type Uart1Rx = Rx<UART1, Uart1RxPin, ()>;
@@ -58,7 +54,7 @@ fn main_test() -> ! {
 }
 
 /// Tests that a short encrypted message can be received successfully.
-fn recv_small_crypto_test(uart: &mut Uart1Rx, hib: &HIB) {
+fn recv_small_crypto_test(uart: &mut Uart1Rx, hib: &Arc<HibPool>) {
     const MSG_LEN: usize = 10;
 
     let mut msg = [0; MSG_LEN + METADATA_OVERHEAD];
@@ -93,7 +89,7 @@ fn recv_small_crypto_test(uart: &mut Uart1Rx, hib: &HIB) {
 ///
 /// This function is never inlined in order to avoid using too much stack space.
 #[inline(never)]
-fn recv_medium_crypto_test(uart: &mut Uart1Rx, hib: &HIB) {
+fn recv_medium_crypto_test(uart: &mut Uart1Rx, hib: &Arc<HibPool>) {
     const MSG_LEN: usize = 1000;
 
     let mut msg = [0; MSG_LEN + METADATA_OVERHEAD];
@@ -127,7 +123,7 @@ fn recv_medium_crypto_test(uart: &mut Uart1Rx, hib: &HIB) {
 ///
 /// This function is never inlined in order to avoid using too much stack space.
 #[inline(never)]
-fn recv_nonce_uniqueness_test(uart: &mut Uart1Rx, hib: &HIB) {
+fn recv_nonce_uniqueness_test(uart: &mut Uart1Rx, hib: &Arc<HibPool>) {
     const NONCE_CT: usize = 1000;
     let mut nonces = [[0; 24]; NONCE_CT];
     let mut msg = [0; METADATA_OVERHEAD + 1];

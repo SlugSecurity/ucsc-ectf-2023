@@ -1,20 +1,19 @@
 //! This module contains an interface to use the hibernation clock.
 
-use crate::timer::HibTimer;
+use crate::{timer::HibTimer, HibPool};
 use core::time::Duration;
-use tm4c123x_hal::{
-    sysctl::{self, Domain, PowerControl, PowerState, RunMode},
-    tm4c123x::HIB,
-};
+use heapless::Arc;
+use tm4c123x_hal::sysctl::{self, Domain, PowerControl, PowerState, RunMode};
 
 /// The hibernation controller.
-pub struct HibController<'a> {
-    hib: &'a HIB,
+#[derive(Clone)]
+pub struct HibController {
+    hib: Arc<HibPool>,
 }
 
-impl<'a> HibController<'a> {
+impl HibController {
     /// Creates a new hibernation controller.
-    pub(crate) fn new(hib: &'a mut HIB, power_control: &PowerControl) -> Self {
+    pub(crate) fn new(hib: Arc<HibPool>, power_control: &PowerControl) -> Self {
         // Enable hibernation module. This is enabled by default, but we enable it here just in case.
         sysctl::control_power(
             power_control,
@@ -49,6 +48,6 @@ impl<'a> HibController<'a> {
 
     /// Creates a timer from a duration using the hibernation clock.
     pub fn create_timer(&self, duration: Duration) -> HibTimer {
-        HibTimer::new(self.hib, duration)
+        HibTimer::new(&self.hib, duration)
     }
 }

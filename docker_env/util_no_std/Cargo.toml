@@ -21,6 +21,7 @@ ucsc-ectf-util-common = { path = "../util_common" }
 hex = {version = "0.4", default-features = false }
 k256 = { version = "0.12.0", default-features = false, features = ["pkcs8"] }
 postcard = { version = "1.0.4", default-features = false }
+heapless = { version = "0.7.16", default-features = false, features = ["cas"] }
 
 # Make sure tm4c123x and tm4c123x-hal use the latest cortex-m and cortex-m-rt crates to fix UB.
 

@@ -91,7 +91,7 @@ fn unpaired_recv_verified_pairing_info(rt: &mut Runtime) -> Option<PairingChalle
 
     let size_read = match rt.uart1_controller.recv_with_data_timeout(
         &mut receive_buffer,
-        &mut rt.hib_controller.create_timer(Duration::from_secs(1000)),
+        &mut rt.hib_controller.create_timer(Duration::from_secs(5)),
     ) {
         Ok(size_read) => size_read,
         Err(CommunicationError::InternalError) => {

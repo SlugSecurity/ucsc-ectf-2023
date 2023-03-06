@@ -9,6 +9,12 @@ use crate::{
     random,
 };
 use chacha20poly1305::Key;
+use heapless::pool::{
+    self,
+    singleton::arc::{self, ArcInner, Pool},
+};
+#[cfg(not(debug_assertions))]
+use heapless::Arc;
 use tm4c123x_hal::{
     delay::Delay,
     gpio::{
@@ -26,6 +32,12 @@ use tm4c123x_hal::{
     tm4c123x::*,
 };
 
+#[cfg(debug_assertions)]
+pub use heapless::Arc;
+
+/// The size of the memory pool for the hibernation peripheral.
+const HIB_POOL_MEMORY_SIZE: usize = 32;
+
 /// Bits-per-second for UART communications.
 const BPS: u32 = 115200;
 
@@ -41,13 +53,82 @@ pub type Uart1TxPin = PB1<AlternateFunction<AF1, PullUp>>;
 /// The RX pin for UART 1.
 pub type Uart1RxPin = PB0<AlternateFunction<AF1, PushPull>>;
 
+/*
+Portions of the below code are adapted from the heapless crate:
+
+Copyright (c) 2017 Jorge Aparicio
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+*/
+
+/// The memory pool for the HIB peripheral.
+#[cfg(not(debug_assertions))]
+pub(crate) struct HibPool;
+
+/// The memory pool for the HIB peripheral.
+#[cfg(debug_assertions)]
+pub struct HibPool;
+
+impl arc::Pool for HibPool {
+    type Data = HIB;
+    fn ptr() -> &'static pool::Pool<ArcInner<HIB>> {
+        static POOL: pool::Pool<ArcInner<HIB>> = pool::Pool::new();
+        &POOL
+    }
+}
+
+impl HibPool {
+    /// Allocates a new `Arc` and writes `data` to it.
+    ///
+    /// Returns an `Err` or if the backing memory pool is empty.
+    pub fn alloc(data: HIB) -> Result<Arc<Self>, HIB>
+    where
+        Self: Sized,
+    {
+        Arc::new(data)
+    }
+
+    /// Increases the capacity of the pool.
+    ///
+    /// This method might *not* fully utilize the given memory block due to alignment requirements.
+    ///
+    /// This method returns the number of *new* blocks that can be allocated.
+    pub fn grow(memory: &'static mut [u8]) -> usize {
+        Self::ptr().grow(memory)
+    }
+}
+
+// Portions of the above code are adapted from the heapless crate.
+
 /// The runtime struct.
 pub struct Runtime<'a> {
     /// The EEPROM controller.
     pub eeprom_controller: EepromController<'a>,
 
     /// The hibernation controller.
-    pub hib_controller: HibController<'a>,
+    pub hib_controller: HibController,
 
     /// The SW1 button controller.
     pub sw1_button_controller: Sw1ButtonController<'a>,
@@ -75,7 +156,8 @@ impl<'a> Runtime<'a> {
         let eeprom_controller =
             EepromController::new(&mut peripherals.eeprom, &peripherals.power_control).unwrap();
 
-        let hib_controller = HibController::new(&mut peripherals.hib, &peripherals.power_control);
+        let hib_controller =
+            HibController::new(peripherals.hib.clone(), &peripherals.power_control);
 
         let sw1_button_controller =
             Sw1ButtonController::new(&mut peripherals.pf4, &mut peripherals.nvic);
@@ -213,7 +295,10 @@ pub struct RuntimePeripherals {
     pub gpio_portf_ahb: GPIO_PORTF_AHB,
     pub eeprom: EEPROM,
     pub sysexc: SYSEXC,
-    pub hib: HIB,
+    #[cfg(debug_assertions)]
+    pub hib: Arc<HibPool>,
+    #[cfg(not(debug_assertions))]
+    pub(crate) hib: Arc<HibPool>,
     pub flash_ctrl: FLASH_CTRL,
     pub udma: UDMA,
     pub power_control: PowerControl,
@@ -227,6 +312,12 @@ pub struct RuntimePeripherals {
 
 impl From<(CorePeripherals, Peripherals)> for RuntimePeripherals {
     fn from((core_peripherals, peripherals): (CorePeripherals, Peripherals)) -> Self {
+        // Initialize the hibernation peripheral memory pool.
+        static mut HIB_POOL_MEMORY: [u8; HIB_POOL_MEMORY_SIZE] = [0; HIB_POOL_MEMORY_SIZE];
+        // SAFETY: This is safe because this is the only place HIB_POOL_MEMORY is used, thus there
+        // are no race conditions. This is only run once since it consumes peripherals.
+        HibPool::grow(unsafe { &mut HIB_POOL_MEMORY });
+
         let sysctl = initialize_sysctl(peripherals.SYSCTL.constrain());
         let mut porta = peripherals.GPIO_PORTA.split(&sysctl.0);
         let (uart0_tx, uart0_rx) = initialize_uart0(
@@ -311,7 +402,10 @@ impl From<(CorePeripherals, Peripherals)> for RuntimePeripherals {
             gpio_portf_ahb: peripherals.GPIO_PORTF_AHB,
             eeprom: peripherals.EEPROM,
             sysexc: peripherals.SYSEXC,
-            hib: peripherals.HIB,
+            hib: match HibPool::alloc(peripherals.HIB) {
+                Ok(arc) => arc,
+                Err(_) => panic!("HIB pool exhausted."),
+            },
             flash_ctrl: peripherals.FLASH_CTRL,
             udma: peripherals.UDMA,
             power_control: sysctl.0,

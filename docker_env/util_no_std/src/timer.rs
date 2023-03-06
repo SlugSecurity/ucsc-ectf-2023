@@ -1,8 +1,9 @@
 //! A timer module containing a timer that counts a specific amount of time. Uses the hibernation
 //! clock to count time.
 
+use crate::HibPool;
 use core::time::Duration;
-use tm4c123x_hal::tm4c123x::HIB;
+use heapless::Arc;
 
 pub use ucsc_ectf_util_common::timer::*;
 
@@ -11,7 +12,7 @@ pub use ucsc_ectf_util_common::timer::*;
 /// at the time of timer polling. Timers have an accuracy of 1/32768 seconds.
 pub struct HibTimer<'a> {
     duration: Duration,
-    hib: &'a HIB,
+    hib: &'a Arc<HibPool>,
     end_subseconds: u64,
 }
 
@@ -25,7 +26,7 @@ impl<'a> HibTimer<'a> {
     }
 
     /// Gets the current time from the hibernation clock.
-    fn get_time_hib(hib: &HIB) -> (u32, u16) {
+    fn get_time_hib(hib: &Arc<HibPool>) -> (u32, u16) {
         loop {
             // A read from the RTC is only valid when the seconds count is the same before and after
             // retrieving the subseconds count.
@@ -43,7 +44,7 @@ impl<'a> HibTimer<'a> {
         Self::get_time_hib(self.hib)
     }
 
-    fn new_impl(hib: &'a HIB, duration: Duration) -> Self {
+    fn new_impl(hib: &'a Arc<HibPool>, duration: Duration) -> Self {
         let curr_subseconds = Self::time_to_subseconds(Self::get_time_hib(hib));
 
         let duration_secs = duration
@@ -65,13 +66,13 @@ impl<'a> HibTimer<'a> {
 
     #[cfg(not(debug_assertions))]
     /// Initializes a timer that expires after a certain duration.
-    pub(crate) fn new(hib: &'a HIB, duration: Duration) -> Self {
+    pub(crate) fn new(hib: &'a Arc<HibPool>, duration: Duration) -> Self {
         Self::new_impl(hib, duration)
     }
 
     #[cfg(debug_assertions)]
     /// Initializes a timer that expires after a certain duration.
-    pub fn new(hib: &'a HIB, duration: Duration) -> Self {
+    pub fn new(hib: &'a Arc<HibPool>, duration: Duration) -> Self {
         Self::new_impl(hib, duration)
     }
 }
