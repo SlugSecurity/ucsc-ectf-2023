@@ -27,6 +27,9 @@ hex = "0.4.3"
 k256 = { version = "0.12.0", features = ["ecdsa-core", "pem"] }
 ucsc-ectf-eeprom-layout = { path = "../docker_env/eeprom_layout" }
 
+[profile.release.package.k256]
+opt-level = 3
+
 # Make sure tm4c123x and tm4c123x-hal use the latest cortex-m and cortex-m-rt crates to fix UB.
 
 [patch.crates-io]
