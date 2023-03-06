@@ -34,7 +34,7 @@ fn main() {
     let args = Args::parse();
     let mut unlock_buff = [0; UNLOCK_BUFF_LEN];
 
-    let msg = match get_unlock_message(args.car_bridge, &mut unlock_buff) {
+    let host_unlock_msg = match get_unlock_message(args.car_bridge, &mut unlock_buff) {
         Ok(msg) => msg,
         Err(_) => {
             println!("Failed to unlock car because unlock message never came or was malformed or the port specified was bad.");
@@ -43,15 +43,23 @@ fn main() {
         }
     };
 
-    println!("Successfully Unlocked Car {}.", msg.car_id);
+    println!("Successfully Unlocked Car {}.", host_unlock_msg.car_id);
 
     println!(
         "Unlock message: {}",
-        str::from_utf8(msg.unlock_msg).expect("Unlock message is not a valid UTF-8 string.")
+        str::from_utf8(host_unlock_msg.unlock_msg)
+            .expect("Unlock message is not a valid UTF-8 string.")
     );
 
-    for (idx, msg) in msg.feature_msgs.into_iter().enumerate() {
-        let msg_str = str::from_utf8(msg).expect("Feature message is not a valid UTF-8 string.");
-        println!("Feature message #{}: {msg_str}", idx + 1);
+    assert!(host_unlock_msg.feature_nums.len() == host_unlock_msg.feature_msgs.len());
+
+    for (feature_num, feature_msg) in host_unlock_msg
+        .feature_nums
+        .into_iter()
+        .zip(host_unlock_msg.feature_msgs.into_iter())
+    {
+        let msg_str =
+            str::from_utf8(feature_msg).expect("Feature message is not a valid UTF-8 string.");
+        println!("Feature message #{feature_num}: {msg_str}");
     }
 }

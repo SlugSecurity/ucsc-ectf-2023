@@ -171,6 +171,9 @@ pub struct UnlockMessage<'a> {
     /// The unlock secret for the car.
     pub unlock_msg: &'a [u8],
 
+    /// The enabled features on the car.
+    pub feature_nums: heapless::Vec<FeatureNumber, NUM_FEATURES>,
+
     /// The feature secrets for the enabled secrets on the car.
     pub feature_msgs: heapless::Vec<&'a [u8], NUM_FEATURES>,
 

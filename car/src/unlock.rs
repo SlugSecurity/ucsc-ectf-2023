@@ -15,6 +15,7 @@ use ucsc_ectf_util_no_std::{
 /// Unlocks the car.
 fn unlock_car(rt: &mut Runtime, challenge_response: &UnlockChallengeResponse) {
     let unlock_msg_bytes = eeprom_messages::get_unlock_message(&mut rt.eeprom_controller);
+    let mut feature_nums = Vec::new();
     let mut feature_msgs_bytes: Vec<[u8; MESSAGE_SIZE], 3> = Vec::new();
 
     for feature in challenge_response.features.iter() {
@@ -22,6 +23,11 @@ fn unlock_car(rt: &mut Runtime, challenge_response: &UnlockChallengeResponse) {
         if !features::verify_packaged_feature_signed(&mut rt.eeprom_controller, feature) {
             return;
         }
+
+        // Push feature number.
+        feature_nums
+            .push(feature.packaged_feature.feature_number)
+            .expect("Failed to push feature number.");
 
         // Push feature message.
         let Some(feature_msg_bytes) = eeprom_messages::get_feature_message(
@@ -38,6 +44,7 @@ fn unlock_car(rt: &mut Runtime, challenge_response: &UnlockChallengeResponse) {
 
     let host_unlock_msg = Uart0Message::HostUnlock(UnlockMessage {
         unlock_msg: &unlock_msg_bytes,
+        feature_nums,
         feature_msgs: feature_msgs_bytes
             .iter()
             .map(|feature| feature.as_slice())

@@ -18,19 +18,35 @@ const UART_FIFO_LEN: usize = 16;
 /// The minimum size a framed UART message can be.
 pub(crate) const MIN_FRAMED_UART_MESSAGE: usize = UART_FIFO_LEN;
 
+fn flush_rx_stream(stream: &mut TcpStream) -> Result<(), CommunicationError> {
+    stream
+        .set_nonblocking(true)
+        .map_err(|_| CommunicationError::InternalError)?;
+
+    let _ = stream.read_to_end(&mut Vec::new());
+
+    stream
+        .set_nonblocking(false)
+        .map_err(|_| CommunicationError::InternalError)?;
+
+    Ok(())
+}
+
 pub(crate) fn connect(
     addr: impl ToSocketAddrs,
 ) -> Result<(FramedTcpTxChannel, FramedTcpRxChannel), CommunicationError> {
-    let stream = TcpStream::connect(addr).map_err(|_| CommunicationError::InternalError)?;
-    let stream_2 = stream
+    let stream_tx = TcpStream::connect(addr).map_err(|_| CommunicationError::InternalError)?;
+    let mut stream_rx = stream_tx
         .try_clone()
         .map_err(|_| CommunicationError::InternalError)?;
 
-    stream
+    stream_tx
         .set_nodelay(true)
         .map_err(|_| CommunicationError::InternalError)?;
 
-    Ok((FramedTcpTxChannel(stream), FramedTcpRxChannel(stream_2)))
+    flush_rx_stream(&mut stream_rx)?;
+
+    Ok((FramedTcpTxChannel(stream_tx), FramedTcpRxChannel(stream_rx)))
 }
 
 fn read_byte(stream: &mut TcpStream) -> Result<u8, CommunicationError> {
