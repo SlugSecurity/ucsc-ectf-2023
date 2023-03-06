@@ -42,6 +42,7 @@ fn unlock_car(rt: &mut Runtime, challenge_response: &UnlockChallengeResponse) {
             .iter()
             .map(|feature| feature.as_slice())
             .collect(),
+        car_id: challenge_response.car_id,
     });
 
     let mut host_unlock_msg_buff = [0; MAX_MESSAGE_SIZE];

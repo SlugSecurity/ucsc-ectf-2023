@@ -164,9 +164,8 @@ pub struct UnlockChallengeResponse<'a> {
     pub features: heapless::Vec<PackagedFeatureSigned<'a>, NUM_FEATURES>,
 }
 
-/// The message containing the unlock secret and the feature secrets of any
-/// enabled features on the car to be sent to the unlock host tool on a successful
-/// unlock.
+/// The message containing the unlock secret, the feature secrets of any enabled features on the
+/// car, and the car ID to be sent to the unlock host tool on a successful unlock.
 #[derive(Serialize, Deserialize)]
 pub struct UnlockMessage<'a> {
     /// The unlock secret for the car.
@@ -174,6 +173,9 @@ pub struct UnlockMessage<'a> {
 
     /// The feature secrets for the enabled secrets on the car.
     pub feature_msgs: heapless::Vec<&'a [u8], NUM_FEATURES>,
+
+    /// The car ID.
+    pub car_id: CarId,
 }
 
 /// A message containing a signed packaged feature to enable a feature

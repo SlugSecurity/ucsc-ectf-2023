@@ -43,6 +43,8 @@ fn main() {
         }
     };
 
+    println!("Successfully Unlocked Car {}.", msg.car_id);
+
     println!(
         "Unlock message: {}",
         str::from_utf8(msg.unlock_msg).expect("Unlock message is not a valid UTF-8 string.")
