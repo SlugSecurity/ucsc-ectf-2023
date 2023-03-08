@@ -39,8 +39,7 @@ fn pair(pin: PairingPin, unpaired_port: u16, paired_port: u16) -> communication:
     let mut timeout_timer = StdTimer::new(Duration::from_secs(5));
     let _ = unpaired_socket.recv_with_data_timeout(&mut buff, &mut timeout_timer);
 
-    // The stupid bridge is cutting off our acknowledgement messages, so we just check for any
-    // message.
+    // The bridge is cutting off our acknowledgement messages, so we just check for any message.
     if timeout_timer.poll() {
         return Err(CommunicationError::RecvError);
     }
