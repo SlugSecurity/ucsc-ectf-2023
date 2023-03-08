@@ -12,7 +12,8 @@ members = [
 exclude = [
     "docker_env/util_std",
     "host_tools/*",
-    "comm_tests/*"
+    "comm_tests/*",
+    "scripts/*"
 ]
 resolver = "2"
 
