@@ -3,8 +3,8 @@ use std::time::Duration;
 use clap::Parser;
 use ucsc_ectf_util_std::{
     communication::{self, CommunicationError, RxChannel, TxChannel, VerifiedFramedTcpSocket},
-    messages::{PairingPin, Uart0Message},
-    timer::{StdTimer, Timer},
+    messages::{HostToolAck, PairingPin, Uart0Message},
+    timer::StdTimer,
 };
 
 const RECV_BUFF_LEN: usize = 128;
@@ -37,14 +37,14 @@ fn pair(pin: PairingPin, unpaired_port: u16, paired_port: u16) -> communication:
 
     let mut buff = [0; RECV_BUFF_LEN];
     let mut timeout_timer = StdTimer::new(Duration::from_secs(5));
-    let _ = unpaired_socket.recv_with_data_timeout(&mut buff, &mut timeout_timer);
+    let resp_len = unpaired_socket.recv_with_data_timeout(&mut buff, &mut timeout_timer)?;
+    let resp = postcard::from_bytes::<Uart0Message>(&buff[..resp_len])
+        .map_err(|_| CommunicationError::RecvError)?;
 
-    // The bridge is cutting off our acknowledgement messages, so we just check for any message.
-    if timeout_timer.poll() {
-        return Err(CommunicationError::RecvError);
+    match resp {
+        Uart0Message::PairingPinResponse(HostToolAck(true)) => Ok(()),
+        _ => Err(CommunicationError::RecvError),
     }
-
-    Ok(())
 }
 
 fn main() {

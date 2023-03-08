@@ -12,7 +12,9 @@ use rand_chacha::{
     ChaCha20Rng,
 };
 use tm4c123x_hal::{CorePeripherals, Peripherals};
-use ucsc_ectf_comm_tests_common::{run_send_tests, RxTxChannel, RX_KEY, STARTING_SEED, TX_KEY};
+use ucsc_ectf_comm_tests_common::{
+    run_send_tests, RxTxChannel, RECV_RX_KEY, RECV_TX_KEY, STARTING_SEED,
+};
 use ucsc_ectf_util_no_std::{hib::HibController, timer::Timer, Runtime};
 
 #[entry]
@@ -22,7 +24,11 @@ fn main_test() -> ! {
         Peripherals::take().unwrap(),
     );
     let mut rt_peripherals = peripherals.into();
-    let mut rt = Runtime::new(&mut rt_peripherals, &RX_KEY.into(), &TX_KEY.into());
+    let mut rt = Runtime::new(
+        &mut rt_peripherals,
+        &RECV_RX_KEY.into(),
+        &RECV_TX_KEY.into(),
+    );
 
     run_send_tests(&mut rt.uart1_controller, |d| {
         rt.hib_controller.create_timer(d)

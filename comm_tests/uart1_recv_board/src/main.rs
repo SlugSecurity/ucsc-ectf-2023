@@ -15,7 +15,7 @@ use rand_chacha::{
 };
 use tm4c123x_hal::{serial::Rx, tm4c123x::UART1, CorePeripherals, Peripherals};
 use ucsc_ectf_comm_tests_common::{
-    run_recv_tests, METADATA_OVERHEAD, RX_KEY, STARTING_SEED, TX_KEY,
+    run_recv_tests, METADATA_OVERHEAD, SEND_RX_KEY, SEND_TX_KEY, STARTING_SEED,
 };
 use ucsc_ectf_util_no_std::{
     communication::{lower_layers::framing::bogoframing, CommunicationError},
@@ -34,7 +34,11 @@ fn main_test() -> ! {
     let mut rt_peripherals = peripherals.into();
 
     {
-        let mut rt = Runtime::new(&mut rt_peripherals, &RX_KEY.into(), &TX_KEY.into());
+        let mut rt = Runtime::new(
+            &mut rt_peripherals,
+            &SEND_RX_KEY.into(),
+            &SEND_TX_KEY.into(),
+        );
 
         run_recv_tests(&mut rt.uart1_controller, |d| {
             rt.hib_controller.create_timer(d)
@@ -68,7 +72,7 @@ fn recv_small_crypto_test(uart: &mut Uart1Rx, hib: &Arc<HibPool>) {
     )
     .unwrap();
     let msg = &mut msg[..read];
-    let decryptor = XChaCha20Poly1305::new(&RX_KEY.into());
+    let decryptor = XChaCha20Poly1305::new(&SEND_RX_KEY.into());
     let mut expected = [0; MSG_LEN];
     let mut rng = ChaCha20Rng::from_seed(STARTING_SEED);
     rng.set_stream(10000);
@@ -102,7 +106,7 @@ fn recv_medium_crypto_test(uart: &mut Uart1Rx, hib: &Arc<HibPool>) {
     )
     .unwrap();
     let msg = &mut msg[..read];
-    let decryptor = XChaCha20Poly1305::new(&RX_KEY.into());
+    let decryptor = XChaCha20Poly1305::new(&SEND_RX_KEY.into());
     let mut expected = [0; MSG_LEN];
     let mut rng = ChaCha20Rng::from_seed(STARTING_SEED);
     rng.set_stream(20000);

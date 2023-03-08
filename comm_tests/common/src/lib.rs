@@ -18,14 +18,16 @@ pub const STARTING_SEED: [u8; 32] = [
     196, 2, 4, 181, 226, 4, 184, 242, 23, 194, 111, 197, 111, 33, 186, 168, 243, 171, 47, 145, 148,
     6, 198, 144, 100, 77, 160, 249, 128, 209, 165, 72,
 ];
-pub const TX_KEY: [u8; 32] = [
+pub const RECV_TX_KEY: [u8; 32] = [
     216, 51, 162, 200, 251, 210, 183, 149, 46, 208, 228, 128, 199, 189, 148, 254, 83, 54, 148, 249,
     242, 216, 110, 61, 58, 163, 152, 155, 68, 145, 14, 232,
 ];
-pub const RX_KEY: [u8; 32] = [
+pub const RECV_RX_KEY: [u8; 32] = [
     45, 249, 236, 184, 243, 34, 227, 240, 89, 1, 15, 213, 123, 109, 16, 235, 244, 202, 22, 193,
     124, 140, 26, 111, 12, 222, 90, 234, 64, 178, 67, 17,
 ];
+pub const SEND_TX_KEY: [u8; 32] = RECV_RX_KEY;
+pub const SEND_RX_KEY: [u8; 32] = RECV_TX_KEY;
 pub const MAX_MESSAGE_SIZE: usize = 1024;
 
 pub trait RxTxChannel: RxChannel + TxChannel {}

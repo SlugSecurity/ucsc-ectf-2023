@@ -6,9 +6,9 @@
 //!
 //! ## Framing protocols
 //! - BogoFraming
-//!     - BogoFraming is a very simple framing protocol. Each message begins and ends with one NULL character.
-//!     - To prevent conflating NULL characters with the underlying data, the underlying data is hex encoded
-//!       and decoded.
+//!     - BogoFraming is a very simple framing protocol. Each message begins and ends with one \1 character.
+//!     - To prevent conflating \1 characters with the underlying data, the underlying data is hex encoded
+//!       and decoded. NULL characters are completely ignored and won't affect the message.
 //!     - Helper functions to implement channels using this type of framing are in the [`bogoframing`] module.
 //!
 //! See the documentation for [`communication`](crate::communication) for a description of full communication
