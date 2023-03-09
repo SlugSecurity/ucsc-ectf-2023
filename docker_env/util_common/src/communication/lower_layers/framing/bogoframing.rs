@@ -37,6 +37,10 @@ fn recv_bogoframe<T, U: Timer>(
         timeout_type: TimeoutType,
     ) -> communication::Result<Option<u8>> {
         let nibble = loop {
+            if timer.poll() {
+                break Err(CommunicationError::RecvError);
+            }
+
             if let Ok(read) = read_fn(read_fn_arg) {
                 match read {
                     b'\0' => continue,
@@ -46,14 +50,10 @@ fn recv_bogoframe<T, U: Timer>(
                     _ => break Err(CommunicationError::RecvError),
                 };
             }
-
-            if timer.poll() {
-                break Err(CommunicationError::RecvError);
-            }
         };
 
-        // Reset the timer if the timeout is per byte.
-        if timeout_type == TimeoutType::ByteLevel {
+        // Reset the timer if the timeout is per byte only if a valid byte was encountered.
+        if nibble.is_ok() && timeout_type == TimeoutType::ByteLevel {
             timer.reset();
         }
 
@@ -87,7 +87,7 @@ fn recv_bogoframe<T, U: Timer>(
     // a message, keeping the timeout in mind. We can do this because a frame must contain at least
     // 1 character.
     let mut first_nibble = loop {
-        // If we find an non-hex and non-\1 character, we return an error.
+        // If we find an non-hex, non-\1, or non-NULL character, we return an error.
         // If it's a \1 character, we continue.
         // If it's a hex character, we return the number it represents.
         if let Some(n) = read_hex_nibble(read_arg, &mut read_fn, timer, timeout_type)? {

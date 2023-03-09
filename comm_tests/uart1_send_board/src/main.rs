@@ -93,7 +93,7 @@ fn send_nonce_uniqueness_test<T: RxTxChannel>(uart: &mut T, hib: &HibController)
     const NONCE_CT: usize = 1000;
 
     // We add a small delay to give the other board time to start receiving.
-    let mut timer = hib.create_timer(Duration::from_millis(10));
+    let mut timer = hib.create_timer(Duration::from_millis(50));
 
     while !timer.poll() {}
 
