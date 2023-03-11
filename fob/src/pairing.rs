@@ -5,7 +5,7 @@ use ucsc_ectf_util_no_std::{
     eeprom::{EepromController, EepromReadWriteField, BYTE_FIELD_SIZE, PAIRING_PIN_SIZE},
     hib::HibController,
     messages::{HostToolAck, Uart0Message},
-    timer::{HibTimer, Timer},
+    timer::Timer,
     Runtime,
 };
 use zeroize::Zeroize;
@@ -44,11 +44,11 @@ pub(crate) fn unpaired_listen_and_pair(rt: &mut Runtime) {
     }
 }
 
-/// Gets the pairing longer cooldown byte and a cooldown timer for a pairing PIN attempt.
-fn get_pin_cooldown_timer<'a>(
+/// Gets the pairing longer cooldown byte and spins a cooldown timer for a pairing PIN attempt.
+fn spin_pin_cooldown_timer(
     eeprom_controller: &mut EepromController,
-    hib_controller: &'a mut HibController,
-) -> (u8, HibTimer<'a>) {
+    hib_controller: &HibController,
+) -> u8 {
     // Check pairing longer cooldown byte.
     let mut pairing_longer_cooldown_byte = [0; BYTE_FIELD_SIZE];
     eeprom_controller
@@ -59,13 +59,16 @@ fn get_pin_cooldown_timer<'a>(
         .expect("EEPROM read failed: pairing longer cooldown byte.");
 
     // Create cooldown timer.
-    let pin_cooldown_timer = match pairing_longer_cooldown_byte[0] {
-        0 => hib_controller.create_timer(Duration::from_millis(800)),
-        1 => hib_controller.create_timer(Duration::from_millis(4800)),
+    let mut pin_cooldown_timer = match pairing_longer_cooldown_byte[0] {
+        0 => hib_controller.create_timer(Duration::from_millis(100)),
+        1 => hib_controller.create_timer(Duration::from_millis(4000)),
         _ => panic!("Invalid pairing longer cooldown byte."),
     };
 
-    (pairing_longer_cooldown_byte[0], pin_cooldown_timer)
+    // Wait for cooldown timer to expire.
+    while !pin_cooldown_timer.poll() {}
+
+    pairing_longer_cooldown_byte[0]
 }
 
 /// Checks a pairing PIN with a cooldown if the PIN is incorrect.
@@ -127,17 +130,13 @@ pub(crate) fn paired_process_msg(rt: &mut Runtime, msg: &Uart0Message) {
         _ => return,
     };
 
-    // Create cooldown timer.
-    let mut hib_controller_cooldown = rt.hib_controller.clone();
-    let (pairing_longer_cooldown_byte, mut pin_cooldown_timer) =
-        get_pin_cooldown_timer(&mut rt.eeprom_controller, &mut hib_controller_cooldown);
+    // Spin cooldown timer.
+    let pairing_longer_cooldown_byte =
+        spin_pin_cooldown_timer(&mut rt.eeprom_controller, &rt.hib_controller);
 
     // Process PIN and Diffie-Hellman key exchange.
     let success =
         check_pin_and_diffie_hellman(rt, pairing_pin_attempt, pairing_longer_cooldown_byte);
-
-    // Wait for cooldown timer to expire. Do this after Diffie-Hellman because it takes a while.
-    while !pin_cooldown_timer.poll() {}
 
     // Pair if Diffie-Hellman was successful.
     if success {
