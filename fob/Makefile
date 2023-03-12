@@ -1,11 +1,9 @@
 fob: FORCE
 	head -c 32 /dev/random > ${SECRETS_DIR}/SECRET_SEED
-	head -c 32 /dev/random > ${SECRETS_DIR}/PAIRING_PRIVATE_KEY
-# Create the verifying/public key and EEPROM files, since the EEPROM file has a fixed size and the verifying/public key is shorter than the field bounds.
+	head -c 32 /dev/random > ${SECRETS_DIR}/PAIRED_FOB_PAIRING_SIGNING_KEY
+	head -c 32 /dev/random > ${SECRETS_DIR}/UNPAIRED_FOB_PAIRING_SIGNING_KEY
+#	Create the EEPROM file, since the EEPROM file has a fixed size.
 	head -c 2048 /dev/zero > ${EEPROM_PATH}
-	head -c 128 /dev/zero > ${SECRETS_DIR}/PAIRING_VERIFYING_KEY
-	head -c 128 /dev/zero > ${SECRETS_DIR}/PAIRING_PUBLIC_KEY
-	head -c 128 /dev/zero > ${SECRETS_DIR}/FEATURE_VERIFYING_KEY
 	rm -f .cargo
 	mv cargo/ .cargo/ 2> /dev/null || true
 	cargo build --bin ucsc-ectf-fob --release --out-dir /tmp/bld -Z unstable-options

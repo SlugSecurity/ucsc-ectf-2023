@@ -33,27 +33,38 @@ pub const PAIRING_PIN_SIZE: usize = 4;
 /// The size of a signed packaged feature.
 pub const PACKAGED_FEATURE_SIGNED_SIZE: usize = 96;
 
-/// The bounds of the pairing secret EEPROM field.
-const PAIRING_PRIVATE_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+/// The bounds of the paired fob's pairing signing key EEPROM field.
+const PAIRED_FOB_PAIRING_SIGNING_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     address: EEPROM_START_ADDRESS,
     size: SECRET_SIZE,
 };
 
-/// The bounds of the pairing public key signature EEPROM field.
-const PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
-    address: PAIRING_PRIVATE_KEY_BOUNDS.address + PAIRING_PRIVATE_KEY_BOUNDS.size,
+/// The bounds of the paired fob's pairing public key signature EEPROM field.
+const PAIRED_FOB_PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+    address: PAIRED_FOB_PAIRING_SIGNING_KEY_BOUNDS.address
+        + PAIRED_FOB_PAIRING_SIGNING_KEY_BOUNDS.size,
     size: SIGNATURE_SIZE,
 };
 
-/// The bounds of the pairing verifying key EEPROM field.
-const PAIRING_VERIFYING_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
-    address: PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS.address + PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS.size,
+/// The bounds of the paired fob's manufacturer pairing verifying key EEPROM field.
+const PAIRING_MANUFACTURER_PAIRED_FOB_VERIFYING_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+    address: PAIRED_FOB_PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS.address
+        + PAIRED_FOB_PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS.size,
     size: PUBLIC_KEY_SIZE,
 };
 
+/// The bounds of the unpaired fob's manufacturer pairing verifying key EEPROM field.
+const PAIRING_MANUFACTURER_UNPAIRED_FOB_VERIFYING_KEY_BOUNDS: EepromFieldBounds =
+    EepromFieldBounds {
+        address: PAIRING_MANUFACTURER_PAIRED_FOB_VERIFYING_KEY_BOUNDS.address
+            + PAIRING_MANUFACTURER_PAIRED_FOB_VERIFYING_KEY_BOUNDS.size,
+        size: PUBLIC_KEY_SIZE,
+    };
+
 /// The bounds of the feature verifying key EEPROM field.
 const FEATURE_VERIFYING_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
-    address: PAIRING_VERIFYING_KEY_BOUNDS.address + PAIRING_VERIFYING_KEY_BOUNDS.size,
+    address: PAIRING_MANUFACTURER_UNPAIRED_FOB_VERIFYING_KEY_BOUNDS.address
+        + PAIRING_MANUFACTURER_UNPAIRED_FOB_VERIFYING_KEY_BOUNDS.size,
     size: PUBLIC_KEY_SIZE,
 };
 
@@ -63,9 +74,23 @@ const SECRET_SEED_BOUNDS: EepromFieldBounds = EepromFieldBounds {
     size: SECRET_SIZE,
 };
 
+/// The bounds of the unpaired fob's pairing signing key EEPROM field.
+const UNPAIRED_FOB_PAIRING_SIGNING_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+    address: SECRET_SEED_BOUNDS.address + SECRET_SEED_BOUNDS.size,
+    size: SECRET_SIZE,
+};
+
+/// The bounds of the unpaired fob's pairing public key signature EEPROM field.
+const UNPAIRED_FOB_PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
+    address: UNPAIRED_FOB_PAIRING_SIGNING_KEY_BOUNDS.address
+        + UNPAIRED_FOB_PAIRING_SIGNING_KEY_BOUNDS.size,
+    size: SIGNATURE_SIZE,
+};
+
 /// The bounds of the key fob encryption key (unlock key 1) EEPROM field.
 const KEY_FOB_ENCRYPTION_KEY_BOUNDS: EepromFieldBounds = EepromFieldBounds {
-    address: SECRET_SEED_BOUNDS.address + SECRET_SEED_BOUNDS.size,
+    address: UNPAIRED_FOB_PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS.address
+        + UNPAIRED_FOB_PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS.size,
     size: SECRET_SIZE,
 };
 
@@ -144,12 +169,14 @@ const UNLOCK_MESSAGE_BOUNDS: EepromFieldBounds = EepromFieldBounds {
 /// This enum specifies the fields of the EEPROM that can be read from, but not written to.
 #[derive(Copy, Clone)]
 pub enum EepromReadOnlyField {
-    /// The secret of the key used for the Diffie-Hellman key exchange during pairing.
-    PairingPrivateKey,
-    /// The signature of the SEC1 public key used for the Diffie-Hellman key exchange during pairing.
-    PairingPublicKeySignature,
-    /// The DER-encoded verifying key used for the Diffie-Hellman key exchange during pairing.
-    PairingVerifyingKey,
+    /// The secret of the key used for the key-signing key in the Diffie-Hellman key exchange during pairing as a paired fob.
+    PairedFobPairingSigningKey,
+    /// The signature of the SEC1 public key-signing key used for the Diffie-Hellman key exchange during pairing as a paired fob.
+    PairedFobPairingPublicKeySignature,
+    /// The DER-encoded verifying key used for verifying a paired fob's key-signing key during the Diffie-Hellman key exchange while pairing.
+    PairingManufacturerPairedFobVerifyingKey,
+    /// The DER-encoded verifying key used for verifying an unpaired fob's key-signing key during the Diffie-Hellman key exchange while pairing.
+    PairingManufacturerUnpairedFobVerifyingKey,
     /// The DER-encoded verifying key used to verify packaged features.
     FeatureVerifyingKey,
     /// The key used as a starting point for the RNG seed hash.
@@ -167,6 +194,10 @@ pub enum EepromReadOnlyField {
 /// This enum specifies the fields of the EEPROM that can be read from and written to.
 #[derive(Copy, Clone)]
 pub enum EepromReadWriteField {
+    /// The secret of the key used for the key-signing key in the Diffie-Hellman key exchange during pairing as an unpaired fob.
+    UnpairedFobPairingSigningKey,
+    /// The signature of the SEC1 public key-signing key used for the Diffie-Hellman key exchange during pairing as an unpaired fob.
+    UnpairedFobPairingPublicKeySignature,
     /// The key used to facilitate encrypted communications from a paired key fob to a car during the
     /// unlock sequence.
     KeyFobEncryptionKey,
@@ -207,9 +238,16 @@ pub trait EepromReadField: Copy {
 impl EepromReadField for EepromReadOnlyField {
     fn get_field_bounds(&self) -> EepromFieldBounds {
         match self {
-            Self::PairingPrivateKey => PAIRING_PRIVATE_KEY_BOUNDS,
-            Self::PairingPublicKeySignature => PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS,
-            Self::PairingVerifyingKey => PAIRING_VERIFYING_KEY_BOUNDS,
+            Self::PairedFobPairingSigningKey => PAIRED_FOB_PAIRING_SIGNING_KEY_BOUNDS,
+            Self::PairedFobPairingPublicKeySignature => {
+                PAIRED_FOB_PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS
+            }
+            Self::PairingManufacturerPairedFobVerifyingKey => {
+                PAIRING_MANUFACTURER_PAIRED_FOB_VERIFYING_KEY_BOUNDS
+            }
+            Self::PairingManufacturerUnpairedFobVerifyingKey => {
+                PAIRING_MANUFACTURER_UNPAIRED_FOB_VERIFYING_KEY_BOUNDS
+            }
             Self::FeatureVerifyingKey => FEATURE_VERIFYING_KEY_BOUNDS,
             Self::SecretSeed => SECRET_SEED_BOUNDS,
             Self::FeatureThreeMessage => FEATURE_THREE_MESSAGE_BOUNDS,
@@ -223,6 +261,10 @@ impl EepromReadField for EepromReadOnlyField {
 impl EepromReadField for EepromReadWriteField {
     fn get_field_bounds(&self) -> EepromFieldBounds {
         match self {
+            Self::UnpairedFobPairingSigningKey => UNPAIRED_FOB_PAIRING_SIGNING_KEY_BOUNDS,
+            Self::UnpairedFobPairingPublicKeySignature => {
+                UNPAIRED_FOB_PAIRING_PUBLIC_KEY_SIGNATURE_BOUNDS
+            }
             Self::KeyFobEncryptionKey => KEY_FOB_ENCRYPTION_KEY_BOUNDS,
             Self::CarEncryptionKey => CAR_ENCRYPTION_KEY_BOUNDS,
             Self::CarId => CAR_ID_BOUNDS,

@@ -2,9 +2,8 @@ car: FORCE
 	head -c 32 /dev/random > ${SECRETS_DIR}/SECRET_SEED
 	head -c 32 /dev/random > ${SECRETS_DIR}/UNLOCK_KEY_ONE
 	head -c 32 /dev/random > ${SECRETS_DIR}/UNLOCK_KEY_TWO
-# Create the verifying key and EEPROM files, since the EEPROM file has a fixed size and the verifying key is shorter than the field bounds.
+#	Create the EEPROM file, since the EEPROM file has a fixed size.
 	head -c 2048 /dev/zero > ${EEPROM_PATH}
-	head -c 128 /dev/zero > ${SECRETS_DIR}/FEATURE_VERIFYING_KEY
 	rm -f .cargo
 	mv cargo/ .cargo/ 2> /dev/null || true
 	cargo build --bin ucsc-ectf-car --release --out-dir /tmp/bld -Z unstable-options

@@ -2,7 +2,10 @@ use crate::MAX_MESSAGE_SIZE;
 use core::{mem, time::Duration};
 use ucsc_ectf_util_no_std::{
     communication::{CommunicationError, RxChannel, TxChannel},
-    eeprom::{EepromReadWriteField, BYTE_FIELD_SIZE, CAR_ID_SIZE, PAIRING_PIN_SIZE, SECRET_SIZE},
+    eeprom::{
+        EepromReadWriteField, BYTE_FIELD_SIZE, CAR_ID_SIZE, PAIRING_PIN_SIZE, SECRET_SIZE,
+        SIGNATURE_SIZE,
+    },
     messages::{
         Nonce, PairingChallenge, PairingChallengeResponse, PairingPin, PairingRequest, Uart1Message,
     },
@@ -125,6 +128,23 @@ fn unpaired_recv_verified_pairing_info(rt: &mut Runtime) -> Option<PairingChalle
 
 /// Updates the EEPROM with the pairing challenge response information.
 fn turn_unpaired_to_paired(rt: &mut Runtime, challenge_response_msg: &PairingChallengeResponse) {
+    const ZEROED_SECRET: [u8; SECRET_SIZE] = [0u8; SECRET_SIZE];
+    const ZEROED_SIGNATURE: [u8; SIGNATURE_SIZE] = [0u8; SIGNATURE_SIZE];
+
+    rt.eeprom_controller
+        .write_slice(
+            EepromReadWriteField::UnpairedFobPairingSigningKey,
+            &ZEROED_SECRET,
+        )
+        .expect("EEPROM write failed: unpaired fob pairing signing key.");
+
+    rt.eeprom_controller
+        .write_slice(
+            EepromReadWriteField::UnpairedFobPairingPublicKeySignature,
+            &ZEROED_SIGNATURE,
+        )
+        .expect("EEPROM write failed: unpaired fob pairing public key signature.");
+
     rt.eeprom_controller
         .write_slice(
             EepromReadWriteField::KeyFobEncryptionKey,

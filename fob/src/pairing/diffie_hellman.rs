@@ -10,7 +10,10 @@ use k256::{
 };
 use ucsc_ectf_util_no_std::{
     communication::{CommunicationError, RxChannel, TxChannel, Uart1Controller},
-    eeprom::{EepromController, EepromReadOnlyField, PUBLIC_KEY_SIZE, SECRET_SIZE, SIGNATURE_SIZE},
+    eeprom::{
+        EepromController, EepromReadOnlyField, EepromReadWriteField, PUBLIC_KEY_SIZE, SECRET_SIZE,
+        SIGNATURE_SIZE,
+    },
     messages::{DiffieHellmanMessage, Key, Uart1Message, VerifiedPublicKey},
     timer::{HibTimer, Timer},
     Runtime, Uart1RxPin, Uart1TxPin,
@@ -22,6 +25,7 @@ fn recv_verified_ephemeral_public_key(
     uart1_controller: &mut Uart1Controller<Uart1TxPin, Uart1RxPin>,
     eeprom_controller: &mut EepromController,
     timeout_timer: &mut HibTimer,
+    paired: bool,
 ) -> Option<PublicKey> {
     // Loop to ignore any invalid messages.
     loop {
@@ -47,23 +51,31 @@ fn recv_verified_ephemeral_public_key(
             _ => continue,
         };
 
-        // Get pairing verifying key from EEPROM.
-        let mut pairing_verifying_key_bytes = [0; PUBLIC_KEY_SIZE];
+        // Determine which pairing verifying key field to use. Use the verifying key for the other side.
+        let manufacturer_pairing_verifying_key_field = if paired {
+            EepromReadOnlyField::PairingManufacturerUnpairedFobVerifyingKey
+        } else {
+            EepromReadOnlyField::PairingManufacturerPairedFobVerifyingKey
+        };
+
+        // Get manufacturer pairing verifying key from EEPROM.
+        let mut manufacturer_pairing_verifying_key_bytes = [0; PUBLIC_KEY_SIZE];
         eeprom_controller
             .read_slice(
-                EepromReadOnlyField::PairingVerifyingKey,
-                &mut pairing_verifying_key_bytes,
+                manufacturer_pairing_verifying_key_field,
+                &mut manufacturer_pairing_verifying_key_bytes,
             )
-            .expect("EEPROM read failed: pairing verifying key.");
-        let pairing_verifying_key = VerifyingKey::from_public_key_der(
-            &pairing_verifying_key_bytes[1..pairing_verifying_key_bytes[0] as usize + 1],
+            .expect("EEPROM read failed: manufacturer pairing verifying key.");
+        let manufacturer_pairing_verifying_key = VerifyingKey::from_public_key_der(
+            &manufacturer_pairing_verifying_key_bytes
+                [1..manufacturer_pairing_verifying_key_bytes[0] as usize + 1],
         )
-        .expect("Failed to deserialize pairing verifying key.");
+        .expect("Failed to deserialize manufacturer pairing verifying key.");
 
         // Verify and get key signing public key.
         let Some(key_signing_public_key) = msg
             .key_signing_public_key
-            .verify_and_get_key(&pairing_verifying_key)
+            .verify_and_get_key(&manufacturer_pairing_verifying_key)
         else {
             continue;
         };
@@ -162,20 +174,31 @@ fn diffie_hellman_set_key(
 /// pairing public key.
 fn sign_ephemeral_public_key(
     rt: &mut Runtime,
+    paired: bool,
     ephemeral_public_key: &PublicKey,
 ) -> (Signature, PublicKey) {
     // Get pairing private key from EEPROM.
     let mut pairing_private_key_bytes = [0; SECRET_SIZE];
-    rt.eeprom_controller
-        .read_slice(
-            EepromReadOnlyField::PairingPrivateKey,
-            &mut pairing_private_key_bytes,
-        )
-        .expect("EEPROM read failed: pairing private key.");
+
+    if paired {
+        rt.eeprom_controller
+            .read_slice(
+                EepromReadOnlyField::PairedFobPairingSigningKey,
+                &mut pairing_private_key_bytes,
+            )
+            .expect("EEPROM read failed: fob pairing signing key.");
+    } else {
+        rt.eeprom_controller
+            .read_slice(
+                EepromReadWriteField::UnpairedFobPairingSigningKey,
+                &mut pairing_private_key_bytes,
+            )
+            .expect("EEPROM read failed: fob pairing signing key.");
+    }
 
     // Sign with pairing private key.
     let pairing_private_key = SecretKey::from_be_bytes(&pairing_private_key_bytes)
-        .expect("Failed to deserialize pairing private key.");
+        .expect("Failed to deserialize fob pairing signing key.");
     pairing_private_key_bytes.zeroize();
     let pairing_public_key = pairing_private_key.public_key();
     let ephemeral_public_key_signature = SigningKey::from(pairing_private_key)
@@ -185,14 +208,25 @@ fn sign_ephemeral_public_key(
 }
 
 /// Gets the pairing public key signature from the EEPROM.
-fn get_pairing_public_key_signature(rt: &mut Runtime) -> Signature {
+fn get_pairing_public_key_signature(rt: &mut Runtime, paired: bool) -> Signature {
+    // Read pairing public key signature from EEPROM.
     let mut pairing_public_key_signature_bytes = [0; SIGNATURE_SIZE];
-    rt.eeprom_controller
-        .read_slice(
-            EepromReadOnlyField::PairingPublicKeySignature,
-            &mut pairing_public_key_signature_bytes,
-        )
-        .expect("EEPROM read failed: pairing public key signature.");
+
+    if paired {
+        rt.eeprom_controller
+            .read_slice(
+                EepromReadOnlyField::PairedFobPairingPublicKeySignature,
+                &mut pairing_public_key_signature_bytes,
+            )
+            .expect("EEPROM read failed: pairing public key signature.");
+    } else {
+        rt.eeprom_controller
+            .read_slice(
+                EepromReadWriteField::UnpairedFobPairingPublicKeySignature,
+                &mut pairing_public_key_signature_bytes,
+            )
+            .expect("EEPROM read failed: pairing public key signature.");
+    }
 
     Signature::try_from(pairing_public_key_signature_bytes.as_slice())
         .expect("Failed to deserialize pairing public key signature.")
@@ -201,13 +235,13 @@ fn get_pairing_public_key_signature(rt: &mut Runtime) -> Signature {
 /// Prepares and sends a Diffie-Hellman message. Inlined to prevent copying of the ephemeral private
 /// key.
 #[inline(always)]
-fn prepare_and_send_diffie_hellman_message(rt: &mut Runtime) -> Option<SecretKey> {
+fn prepare_and_send_diffie_hellman_message(rt: &mut Runtime, paired: bool) -> Option<SecretKey> {
     // Get fields necessary for Diffie-Hellman message.
     let ephemeral_private_key = generate_ephemeral_key(rt);
     let ephemeral_public_key = ephemeral_private_key.public_key();
     let (ephemeral_public_key_signature, pairing_public_key) =
-        sign_ephemeral_public_key(rt, &ephemeral_public_key);
-    let pairing_public_key_signature = get_pairing_public_key_signature(rt);
+        sign_ephemeral_public_key(rt, paired, &ephemeral_public_key);
+    let pairing_public_key_signature = get_pairing_public_key_signature(rt, paired);
 
     // Send Diffie-Hellman message to unpaired key fob.
     if send_diffie_hellman_msg(
@@ -235,12 +269,13 @@ pub(crate) fn run_unpaired(rt: &mut Runtime) -> bool {
         &mut rt.uart1_controller,
         &mut rt.eeprom_controller,
         &mut rt.hib_controller.create_timer(Duration::from_secs(1000)),
+        false,
     ) else {
         return false;
     };
 
     // Generate ephemeral private key and send Diffie-Hellman message.
-    let Some(ephemeral_private_key) = prepare_and_send_diffie_hellman_message(rt)
+    let Some(ephemeral_private_key) = prepare_and_send_diffie_hellman_message(rt, false)
     else {
         return false;
     };
@@ -259,7 +294,7 @@ pub(crate) fn run_paired(rt: &mut Runtime) -> bool {
     rt.uart1_controller.change_tx_key(&default_key);
 
     // Generate ephemeral private key and send Diffie-Hellman message.
-    let Some(ephemeral_private_key) = prepare_and_send_diffie_hellman_message(rt)
+    let Some(ephemeral_private_key) = prepare_and_send_diffie_hellman_message(rt, true)
     else {
         return false;
     };
@@ -269,6 +304,7 @@ pub(crate) fn run_paired(rt: &mut Runtime) -> bool {
         &mut rt.uart1_controller,
         &mut rt.eeprom_controller,
         &mut rt.hib_controller.create_timer(Duration::from_secs(1)),
+        true,
     ) else {
         return false;
     };

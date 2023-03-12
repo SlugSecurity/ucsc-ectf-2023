@@ -1,7 +1,6 @@
 use std::env;
 use std::fs::{File, OpenOptions};
-use std::io::{Read, Write};
-use std::os::unix::fs::FileExt;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
 use hex::decode;
@@ -13,7 +12,7 @@ use ucsc_ectf_eeprom_layout::{
     EepromReadField, EepromReadOnlyField, EepromReadWriteField, BYTE_FIELD_SIZE, SECRET_SIZE,
 };
 
-fn eeprom_field_from_path<P, F>(eeprom_file: &File, field: F, path: P)
+fn eeprom_field_from_path<P, F>(eeprom_file: &mut File, field: F, path: P)
 where
     P: AsRef<Path>,
     F: EepromReadField,
@@ -23,16 +22,18 @@ where
     let offset = bounds.address as u64;
     let mut buf = vec![0u8; bounds.size];
     f.read_exact(&mut buf).unwrap();
-    eeprom_file.write_all_at(&buf, offset).unwrap();
+    eeprom_file.seek(SeekFrom::Start(offset)).unwrap();
+    eeprom_file.write_all(&buf).unwrap();
 }
 
-fn eeprom_field_from_buf<F>(eeprom_file: &File, field: F, buf: &[u8])
+fn eeprom_field_from_buf<F>(eeprom_file: &mut File, field: F, buf: &[u8])
 where
     F: EepromReadField,
 {
     let bounds = EepromReadField::get_field_bounds(&field);
     let offset = bounds.address as u64;
-    eeprom_file.write_all_at(buf, offset).unwrap();
+    eeprom_file.seek(SeekFrom::Start(offset)).unwrap();
+    eeprom_file.write_all(buf).unwrap();
 }
 
 fn main() {
@@ -55,19 +56,48 @@ fn main() {
         .unwrap();
 
     if let Some(secrets_dir) = option_env!("SECRETS_DIR") {
-        let mut pairing_signing_key_file =
-            File::open(format!("{secrets_dir}/PAIRING_SIGNING_KEY")).unwrap();
-        let mut pairing_verifying_key_file = OpenOptions::new()
+        let mut pairing_manufacturer_paired_fob_signing_key_file = File::open(format!(
+            "{secrets_dir}/PAIRING_MANUFACTURER_PAIRED_FOB_SIGNING_KEY"
+        ))
+        .unwrap();
+        let mut pairing_manufacturer_paired_fob_verifying_key_file = OpenOptions::new()
             .write(true)
             .create(false)
             .truncate(false)
             .append(false)
-            .open(format!("{secrets_dir}/PAIRING_VERIFYING_KEY"))
+            .open(format!(
+                "{secrets_dir}/PAIRING_MANUFACTURER_PAIRED_FOB_VERIFYING_KEY"
+            ))
             .unwrap();
-        let mut pairing_private_key_file =
-            File::open(format!("{secrets_dir}/PAIRING_PRIVATE_KEY")).unwrap();
-        let mut pairing_public_key_signature_file =
-            File::create(format!("{secrets_dir}/PAIRING_PUBLIC_KEY_SIGNATURE")).unwrap();
+
+        let mut pairing_manufacturer_unpaired_fob_signing_key_file = File::open(format!(
+            "{secrets_dir}/PAIRING_MANUFACTURER_UNPAIRED_FOB_SIGNING_KEY"
+        ))
+        .unwrap();
+        let mut pairing_manufacturer_unpaired_fob_verifying_key_file = OpenOptions::new()
+            .write(true)
+            .create(false)
+            .truncate(false)
+            .append(false)
+            .open(format!(
+                "{secrets_dir}/PAIRING_MANUFACTURER_UNPAIRED_FOB_VERIFYING_KEY"
+            ))
+            .unwrap();
+
+        let mut paired_fob_pairing_signing_key_file =
+            File::open(format!("{secrets_dir}/PAIRED_FOB_PAIRING_SIGNING_KEY")).unwrap();
+        let mut paired_fob_pairing_public_key_signature_file = File::create(format!(
+            "{secrets_dir}/PAIRED_FOB_PAIRING_PUBLIC_KEY_SIGNATURE"
+        ))
+        .unwrap();
+
+        let mut unpaired_fob_pairing_signing_key_file =
+            File::open(format!("{secrets_dir}/UNPAIRED_FOB_PAIRING_SIGNING_KEY")).unwrap();
+        let mut unpaired_fob_pairing_public_key_signature_file = File::create(format!(
+            "{secrets_dir}/UNPAIRED_FOB_PAIRING_PUBLIC_KEY_SIGNATURE"
+        ))
+        .unwrap();
+
         let mut feature_signing_key_file =
             File::open(format!("{secrets_dir}/FEATURE_SIGNING_KEY")).unwrap();
         let mut feature_verifying_key_file = OpenOptions::new()
@@ -77,7 +107,7 @@ fn main() {
             .append(false)
             .open(format!("{secrets_dir}/FEATURE_VERIFYING_KEY"))
             .unwrap();
-        let eeprom_file = OpenOptions::new()
+        let mut eeprom_file = OpenOptions::new()
             .write(true)
             .create(false)
             .truncate(false)
@@ -87,30 +117,77 @@ fn main() {
 
         let mut private_key_bytes = [0u8; 32];
 
-        pairing_signing_key_file
+        pairing_manufacturer_paired_fob_signing_key_file
             .read_exact(&mut private_key_bytes)
             .unwrap();
-        let pairing_signing_key = SigningKey::from_bytes(&private_key_bytes).unwrap();
-        let pairing_verifying_key = pairing_signing_key.verifying_key();
-        let mut pairing_verifying_key_bytes = pairing_verifying_key
-            .to_public_key_der()
-            .unwrap()
-            .into_vec();
-        pairing_verifying_key_bytes.insert(0, pairing_verifying_key_bytes.len() as u8);
-        pairing_verifying_key_file
-            .write_all(&pairing_verifying_key_bytes)
+        let pairing_manufacturer_paired_fob_signing_key =
+            SigningKey::from_bytes(&private_key_bytes).unwrap();
+        let pairing_manufacturer_paired_fob_verifying_key =
+            pairing_manufacturer_paired_fob_signing_key.verifying_key();
+        let mut pairing_manufacturer_paired_fob_verifying_key_bytes =
+            pairing_manufacturer_paired_fob_verifying_key
+                .to_public_key_der()
+                .unwrap()
+                .into_vec();
+        pairing_manufacturer_paired_fob_verifying_key_bytes.insert(
+            0,
+            pairing_manufacturer_paired_fob_verifying_key_bytes.len() as u8,
+        );
+        pairing_manufacturer_paired_fob_verifying_key_file
+            .write_all(&pairing_manufacturer_paired_fob_verifying_key_bytes)
             .unwrap();
 
-        pairing_private_key_file
+        pairing_manufacturer_unpaired_fob_signing_key_file
             .read_exact(&mut private_key_bytes)
             .unwrap();
-        let pairing_private_key = SecretKey::from_be_bytes(&private_key_bytes).unwrap();
-        let pairing_public_key = pairing_private_key.public_key();
+        let pairing_manufacturer_unpaired_fob_signing_key =
+            SigningKey::from_bytes(&private_key_bytes).unwrap();
+        let pairing_manufacturer_unpaired_fob_verifying_key =
+            pairing_manufacturer_unpaired_fob_signing_key.verifying_key();
+        let mut pairing_manufacturer_unpaired_fob_verifying_key_bytes =
+            pairing_manufacturer_unpaired_fob_verifying_key
+                .to_public_key_der()
+                .unwrap()
+                .into_vec();
+        pairing_manufacturer_unpaired_fob_verifying_key_bytes.insert(
+            0,
+            pairing_manufacturer_unpaired_fob_verifying_key_bytes.len() as u8,
+        );
+        pairing_manufacturer_unpaired_fob_verifying_key_file
+            .write_all(&pairing_manufacturer_unpaired_fob_verifying_key_bytes)
+            .unwrap();
 
-        let pairing_public_key_signature: Signature =
-            pairing_signing_key.sign(pairing_public_key.to_encoded_point(true).as_bytes());
-        pairing_public_key_signature_file
-            .write_all(&pairing_public_key_signature.to_bytes())
+        paired_fob_pairing_signing_key_file
+            .read_exact(&mut private_key_bytes)
+            .unwrap();
+        let paired_fob_pairing_signing_key = SecretKey::from_be_bytes(&private_key_bytes).unwrap();
+        let paired_fob_pairing_verifying_key = paired_fob_pairing_signing_key.public_key();
+
+        let paired_fob_pairing_public_key_signature: Signature =
+            pairing_manufacturer_paired_fob_signing_key.sign(
+                paired_fob_pairing_verifying_key
+                    .to_encoded_point(true)
+                    .as_bytes(),
+            );
+        paired_fob_pairing_public_key_signature_file
+            .write_all(&paired_fob_pairing_public_key_signature.to_bytes())
+            .unwrap();
+
+        unpaired_fob_pairing_signing_key_file
+            .read_exact(&mut private_key_bytes)
+            .unwrap();
+        let unpaired_fob_pairing_signing_key =
+            SecretKey::from_be_bytes(&private_key_bytes).unwrap();
+        let unpaired_fob_pairing_verifying_key = unpaired_fob_pairing_signing_key.public_key();
+
+        let unpaired_fob_pairing_public_key_signature: Signature =
+            pairing_manufacturer_unpaired_fob_signing_key.sign(
+                unpaired_fob_pairing_verifying_key
+                    .to_encoded_point(true)
+                    .as_bytes(),
+            );
+        unpaired_fob_pairing_public_key_signature_file
+            .write_all(&unpaired_fob_pairing_public_key_signature.to_bytes())
             .unwrap();
 
         let mut feature_signing_key_bytes = [0u8; SECRET_SIZE];
@@ -129,31 +206,37 @@ fn main() {
             .unwrap();
 
         eeprom_field_from_path(
-            &eeprom_file,
-            EepromReadOnlyField::PairingPrivateKey,
-            format!("{secrets_dir}/PAIRING_PRIVATE_KEY"),
+            &mut eeprom_file,
+            EepromReadOnlyField::PairedFobPairingSigningKey,
+            format!("{secrets_dir}/PAIRED_FOB_PAIRING_SIGNING_KEY"),
         );
 
         eeprom_field_from_path(
-            &eeprom_file,
-            EepromReadOnlyField::PairingPublicKeySignature,
-            format!("{secrets_dir}/PAIRING_PUBLIC_KEY_SIGNATURE"),
+            &mut eeprom_file,
+            EepromReadOnlyField::PairedFobPairingPublicKeySignature,
+            format!("{secrets_dir}/PAIRED_FOB_PAIRING_PUBLIC_KEY_SIGNATURE"),
         );
 
         eeprom_field_from_path(
-            &eeprom_file,
-            EepromReadOnlyField::PairingVerifyingKey,
-            format!("{secrets_dir}/PAIRING_VERIFYING_KEY"),
+            &mut eeprom_file,
+            EepromReadOnlyField::PairingManufacturerPairedFobVerifyingKey,
+            format!("{secrets_dir}/PAIRING_MANUFACTURER_PAIRED_FOB_VERIFYING_KEY"),
         );
 
         eeprom_field_from_path(
-            &eeprom_file,
+            &mut eeprom_file,
+            EepromReadOnlyField::PairingManufacturerUnpairedFobVerifyingKey,
+            format!("{secrets_dir}/PAIRING_MANUFACTURER_UNPAIRED_FOB_VERIFYING_KEY"),
+        );
+
+        eeprom_field_from_path(
+            &mut eeprom_file,
             EepromReadOnlyField::FeatureVerifyingKey,
             format!("{secrets_dir}/FEATURE_VERIFYING_KEY"),
         );
 
         eeprom_field_from_path(
-            &eeprom_file,
+            &mut eeprom_file,
             EepromReadOnlyField::SecretSeed,
             format!("{secrets_dir}/SECRET_SEED"),
         );
@@ -163,29 +246,42 @@ fn main() {
         {
             let buf: u32 = car_id.parse().unwrap();
             eeprom_field_from_buf(
-                &eeprom_file,
+                &mut eeprom_file,
                 EepromReadWriteField::CarId,
                 &buf.to_be_bytes(),
             );
 
             eeprom_field_from_path(
-                &eeprom_file,
+                &mut eeprom_file,
                 EepromReadWriteField::KeyFobEncryptionKey,
                 format!("{secrets_dir}/UNLOCK_KEY_ONE"),
             );
 
             eeprom_field_from_path(
-                &eeprom_file,
+                &mut eeprom_file,
                 EepromReadWriteField::CarEncryptionKey,
                 format!("{secrets_dir}/UNLOCK_KEY_TWO"),
             );
 
             let buf = decode(pairing_pin).unwrap();
-            eeprom_field_from_buf(&eeprom_file, EepromReadWriteField::PairingPin, &buf);
+            eeprom_field_from_buf(&mut eeprom_file, EepromReadWriteField::PairingPin, &buf);
             eeprom_field_from_buf(
-                &eeprom_file,
+                &mut eeprom_file,
                 EepromReadWriteField::PairingByte,
                 &[1u8; BYTE_FIELD_SIZE],
+            );
+        } else {
+            // Is unpaired key fob.
+            eeprom_field_from_path(
+                &mut eeprom_file,
+                EepromReadWriteField::UnpairedFobPairingSigningKey,
+                format!("{secrets_dir}/UNPAIRED_FOB_PAIRING_SIGNING_KEY"),
+            );
+
+            eeprom_field_from_path(
+                &mut eeprom_file,
+                EepromReadWriteField::UnpairedFobPairingPublicKeySignature,
+                format!("{secrets_dir}/UNPAIRED_FOB_PAIRING_PUBLIC_KEY_SIGNATURE"),
             );
         }
 

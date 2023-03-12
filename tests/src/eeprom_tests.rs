@@ -5,10 +5,11 @@ use ucsc_ectf_util_no_std::eeprom::{
     EepromController, EepromReadField, EepromReadOnlyField, EepromReadWriteField, PUBLIC_KEY_SIZE,
 };
 
-const READ_ONLY_FIELDS: [EepromReadOnlyField; 9] = [
-    EepromReadOnlyField::PairingPrivateKey,
-    EepromReadOnlyField::PairingPublicKeySignature,
-    EepromReadOnlyField::PairingVerifyingKey,
+const READ_ONLY_FIELDS: [EepromReadOnlyField; 10] = [
+    EepromReadOnlyField::PairedFobPairingSigningKey,
+    EepromReadOnlyField::PairedFobPairingPublicKeySignature,
+    EepromReadOnlyField::PairingManufacturerPairedFobVerifyingKey,
+    EepromReadOnlyField::PairingManufacturerUnpairedFobVerifyingKey,
     EepromReadOnlyField::FeatureVerifyingKey,
     EepromReadOnlyField::SecretSeed,
     EepromReadOnlyField::FeatureThreeMessage,
@@ -17,7 +18,9 @@ const READ_ONLY_FIELDS: [EepromReadOnlyField; 9] = [
     EepromReadOnlyField::UnlockMessage,
 ];
 
-const READ_WRITE_FIELDS: [EepromReadWriteField; 9] = [
+const READ_WRITE_FIELDS: [EepromReadWriteField; 11] = [
+    EepromReadWriteField::UnpairedFobPairingSigningKey,
+    EepromReadWriteField::UnpairedFobPairingPublicKeySignature,
     EepromReadWriteField::KeyFobEncryptionKey,
     EepromReadWriteField::CarEncryptionKey,
     EepromReadWriteField::CarId,
