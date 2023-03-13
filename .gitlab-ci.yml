@@ -36,7 +36,8 @@ lint-pedantic:
   before_script:
     - *build_ci_podman
   script:
-    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && CARGO_HOME=cache cargo clippy -- -W clippy::pedantic; cd host_tools && CARGO_HOME=../cache cargo clippy -- -W clippy::pedantic'
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && CARGO_HOME=cache cargo clippy -- -W clippy::pedantic; cd host_tools && CARGO_HOME=../cache cargo clippy -- -W
+      clippy::pedantic'
   cache:
     key: cache
     paths:
@@ -75,10 +76,14 @@ ectf_tools:
     - ectf_tools build.tools --design . --name ectf
     - ectf_tools build.depl --design . --name ectf --deployment a
     - ectf_tools build.fob --design . --name ectf --deployment a --fob-name fob1 --fob-out output
-    - ectf_tools build.car_fob_pair --design . --name ectf --deployment a --car-name car --fob-name fob0 --car-out output --fob-out output --car-id 255 --pair-pin cafebe --car-unlock-secret 'unlock' --car-feature1-secret 'feature1' --car-feature2-secret 'feature2' --car-feature3-secret 'feature3'
-    - docker run --rm -v ectf.ectf.a.secrets.vol:/secrets -v ectf.ectf.tools.vol:/tools_out:ro --workdir=/tools_out -v ./output:/package_dir ectf:ectf ./package_tool --package-name feature1 --car-id 255 --feature-number 1
-    - docker run --rm -v ectf.ectf.a.secrets.vol:/secrets -v ectf.ectf.tools.vol:/tools_out:ro --workdir=/tools_out -v ./output:/package_dir ectf:ectf ./package_tool --package-name feature2 --car-id 255 --feature-number 2
-    - docker run --rm -v ectf.ectf.a.secrets.vol:/secrets -v ectf.ectf.tools.vol:/tools_out:ro --workdir=/tools_out -v ./output:/package_dir ectf:ectf ./package_tool --package-name feature3 --car-id 255 --feature-number 3
+    - ectf_tools build.car_fob_pair --design . --name ectf --deployment a --car-name car --fob-name fob0 --car-out output --fob-out output --car-id 255 --pair-pin cafebe
+      --car-unlock-secret 'unlock' --car-feature1-secret 'feature1' --car-feature2-secret 'feature2' --car-feature3-secret 'feature3'
+    - docker run --rm -v ectf.ectf.a.secrets.vol:/secrets -v ectf.ectf.tools.vol:/tools_out:ro --workdir=/tools_out -v ./output:/package_dir ectf:ectf ./package_tool
+      --package-name feature1 --car-id 255 --feature-number 1
+    - docker run --rm -v ectf.ectf.a.secrets.vol:/secrets -v ectf.ectf.tools.vol:/tools_out:ro --workdir=/tools_out -v ./output:/package_dir ectf:ectf ./package_tool
+      --package-name feature2 --car-id 255 --feature-number 2
+    - docker run --rm -v ectf.ectf.a.secrets.vol:/secrets -v ectf.ectf.tools.vol:/tools_out:ro --workdir=/tools_out -v ./output:/package_dir ectf:ectf ./package_tool
+      --package-name feature3 --car-id 255 --feature-number 3
   artifacts:
     paths:
       - output/
@@ -97,7 +102,11 @@ pages:
   before_script:
     - *build_ci_podman
   script:
-    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && mkdir public && CARGO_HOME=cache cargo doc --no-deps --document-private-items && cp -r target/thumbv7em-none-eabihf/doc public/privateapi && CARGO_HOME=cache cargo doc --no-deps && cp -r target/thumbv7em-none-eabihf/doc public/publicapi'
+    - podman run --rm -v .:/mnt gitlab_runner sh -c 'cd /mnt && mkdir public && CARGO_HOME=cache cargo doc --no-deps --document-private-items --workspace --exclude
+      friendly_ping --exclude friendly_pong --exclude ucsc-ectf-tests && cp -r target/thumbv7em-none-eabihf/doc public/privateapi && CARGO_HOME=cache cargo doc --no-deps
+      --workspace --exclude friendly_ping --exclude friendly_pong --exclude ucsc-ectf-tests && cp -r target/thumbv7em-none-eabihf/doc public/publicapi && cd host_tools &&
+      CARGO_HOME=cache cargo doc --no-deps --document-private-items && cp -r target/x86_64-unknown-linux-gnu/doc ../public/host_tools_privateapi && CARGO_HOME=cache cargo doc
+      --no-deps && cp -r target/x86_64-unknown-linux-gnu/doc ../public/host_tools_publicapi'
   artifacts:
     paths:
       - public
@@ -111,7 +120,7 @@ pages:
 
 mirror:
   stage: deploy
-  needs: [ectf_tools]
+  needs: [ectf_tools, pages]
   variables:
     BLACKLISTED_FILES: ".cargo .vscode comm_tests docker_env/util_std/.cargo finding_friends tests .clang-format .gdbinit .gitlab-ci.yml Cargo.lock Cargo.toml CONTRIBUTING.md Dockerfile Dockerfile.CI *.nu *.sh"
     GIT_USER_NAME: "Brian Mak"
@@ -121,6 +130,9 @@ mirror:
   script:
     - rm -rf $BLACKLISTED_FILES
     - mv README_PUBLIC.md README.md
+    - mv public/privateapi docs
+    - mv public/host_tools_privateapi docs_host_tools
+    - rm -rf public
     - git add -A
     - rm -f .gitignore docker_env/util_std/.gitignore
     - git add .gitignore docker_env/util_std/.gitignore

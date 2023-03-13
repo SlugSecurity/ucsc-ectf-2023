@@ -2,6 +2,8 @@
 
 This repository contains all of the source code for UCSC's 2023 eCTF competition work.
 
+See the [design document](DESIGN.pdf) for an overview of our design.
+
 ## Contributing
 See the [contribution guidelines](CONTRIBUTING.md) for guidelines on how to contribute.
 
