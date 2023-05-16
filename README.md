@@ -1,16 +1,11 @@
 # 2023 UCSC eCTF
 
-This repository contains all of the source code for UCSC's 2023 eCTF competition work.
+This repository contains all of the source code for UCSC's 2023 eCTF competition work. There is a GitLab CI script in this repository that is not functional here because we migrated this from our GitLab group to our GitHub organization.
 
 See the [design document](DESIGN.pdf) for an overview of our design.
 
 ## Contributing
-See the [contribution guidelines](CONTRIBUTING.md) for guidelines on how to contribute.
-
-## How to connect to our test server
-1. Accept the Tailscale invite and install Tailscale. Ask on Discord if you don't have an invite.
-2. SSH onto the server with `ssh ectf@plantmachineectf.tail25abc.ts.net`. If you don't have your SSH key set up on the server, ask on Discord.
-3. Make a folder to keep your work in.
+See the [contribution guidelines](CONTRIBUTING.md) for an overview of our contribution and code review process.
 
 ## How to test the project with Podman
 1. Change the working directory to the main project directory or your own copy of it.
