@@ -2,6 +2,8 @@
 
 This repository contains all of the source code for UCSC's 2023 eCTF competition work. There is a GitLab CI script in this repository that is not functional here because we migrated this from our GitLab group to our GitHub organization.
 
+We migrated our issues and merge requests from our GitLab. However, since the source branches on the merge requests were deleted, the merge requests were migrated as issues. The migrated merge request issues are also missing line numbers from the code review comments.
+
 See the [design document](DESIGN.pdf) for an overview of our design.
 
 ## Contributing
